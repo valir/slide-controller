@@ -1,0 +1,6 @@
+[submodule "lib/minigrafx"]
+	path = components/minigrafx
+	url = git@github.com:valir/minigrafx.git
+[submodule "components/XPT2046_Touchscreen"]
+	path = components/XPT2046_Touchscreen
+	url = git@github.com:valir/XPT2046_Touchscreen.git
