@@ -4,6 +4,8 @@
 #include <freertos/queue.h>
 #include <driver/gpio.h>
 
+#include "dht.h"
+
 #define DHT_PIN GPIO_NUM_32
 
 #define RET_ERR(ret) if (ESP_OK != ret) {\
@@ -11,18 +13,6 @@
   vTaskDelete(NULL); \
   return; }
 
-enum DHT_Status {
-  DHT_STATUS_OK,
-  DHT_STATUS_BAD_CHECKSUM,
-  DHT_STATUS_INVALID
-};
-
-struct DHT_Info {
-  float temperature =0.0;
-  float relative_humidity =0.0;
-  uint64_t polling_interval = pdMS_TO_TICKS(10000);
-  DHT_Status status = DHT_STATUS_INVALID;
-};
 
 DHT_Info dht_info;
 

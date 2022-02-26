@@ -48,6 +48,7 @@ MiniGrafx gfx = MiniGrafx(&lcd, BITS_PER_PIXEL, palette, SCREEN_WIDTH, SCREEN_HE
 int circleSize = 0;
 
 TaskHandle_t displayTaskHandle = NULL;
+TaskHandle_t mq135TaskHandle = NULL;
 
 void displayTask(void *) {
   esp_task_wdt_add(NULL);
@@ -78,6 +79,7 @@ bool idle_hook() {
 }
 
 void dht_task(void*);
+void mq135_task(void*);
 
 extern "C" void app_main() {
   Serial.begin(115200);
@@ -91,4 +93,5 @@ extern "C" void app_main() {
 
   xTaskCreateUniversal(displayTask, "displayTask", 8192, NULL, 1, &displayTaskHandle, 0);
   xTaskCreateUniversal(dht_task, "dhtTask", 8192, NULL, 2, NULL, 1);
+  xTaskCreateUniversal(mq135_task, "mq135Task", 4096, NULL, 1, &mq135TaskHandle, 0);
 }
