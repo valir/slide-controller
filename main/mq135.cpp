@@ -1,8 +1,11 @@
 
 #include <MQ135.h>
 #include <driver/gpio.h>
+#include <esp_log.h>
 
 #include "dht.h"
+
+static const char* TAG = "AIR";
 
 enum MQ135_Status {
   MQ135_STATUS_OK,
@@ -33,7 +36,7 @@ void mq135_task(void*) {
       mq135_info.ppm = mq135.getPPM();
       mq135_info.status = MQ135_STATUS_UNCORRECTED;
     }
-    printf("MQ135: %5.2f ppm %s\n", mq135_info.ppm, mq135_info.status == MQ135_STATUS_OK ? "corrected" : "uncorrected");
+    ESP_LOGI(TAG, "%5.2f ppm %s", mq135_info.ppm, mq135_info.status == MQ135_STATUS_OK ? "corrected" : "uncorrected");
   }
 
   vTaskDelete(NULL);
