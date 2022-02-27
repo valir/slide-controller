@@ -49,6 +49,7 @@ int circleSize = 0;
 
 TaskHandle_t displayTaskHandle = NULL;
 TaskHandle_t mq135TaskHandle = NULL;
+TaskHandle_t rs485TaskHandle = NULL;
 
 void displayTask(void *) {
   esp_task_wdt_add(NULL);
@@ -74,24 +75,26 @@ void displayTask(void *) {
 }
 
 bool idle_hook() {
-  displayTask(NULL);
   return true;
 }
 
 void dht_task(void*);
 void mq135_task(void*);
+void rs485_task(void*);
 
 extern "C" void app_main() {
   Serial.begin(115200);
-  printf("setting-up\n");
 
   initArduino();
+  vTaskDelay(100);
   // auto err = esp_register_freertos_idle_hook_for_cpu(idle_hook, 0);
   // if (ESP_OK != err) {
   //   printf("Error registering idle hook %d", err);
   // }
 
-  xTaskCreateUniversal(displayTask, "displayTask", 8192, NULL, 1, &displayTaskHandle, 0);
+  printf("Starting tasks...\n");
+  // xTaskCreateUniversal(displayTask, "displayTask", 8192, NULL, 1, &displayTaskHandle, 0);
   xTaskCreateUniversal(dht_task, "dhtTask", 8192, NULL, 2, NULL, 1);
   xTaskCreateUniversal(mq135_task, "mq135Task", 4096, NULL, 1, &mq135TaskHandle, 0);
+  xTaskCreateUniversal(rs485_task, "rs485Task", 4096, NULL, 1, &mq135TaskHandle, 0);
 }
