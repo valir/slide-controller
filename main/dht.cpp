@@ -3,16 +3,13 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <driver/gpio.h>
+#include <esp_log.h>
 
 #include "dht.h"
 
 #define DHT_PIN GPIO_NUM_32
 
-#define RET_ERR(ret) if (ESP_OK != ret) {\
-  printf("DHT ***** error at %s:%d -> %d\n", __FILE__, __LINE__, ret); \
-  vTaskDelete(NULL); \
-  return; }
-
+static const char* TAG = "TEMP";
 
 DHT_Info dht_info;
 
@@ -63,26 +60,31 @@ void dht_task(void*) {
   io_config.mode = GPIO_MODE_DISABLE;
   io_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io_config.pull_up_en = GPIO_PULLUP_ENABLE;
-  auto ret = gpio_config(&io_config);
+  ESP_ERROR_CHECK( gpio_config(&io_config) );
 
-  ret = gpio_install_isr_service(ESP_INTR_FLAG_LOWMED); RET_ERR(ret);
-  ret = gpio_isr_handler_add(DHT_PIN, dht_isr_handler, NULL); RET_ERR(ret);
-  ret = gpio_set_intr_type(DHT_PIN, GPIO_INTR_ANYEDGE); RET_ERR(ret);
+  ESP_ERROR_CHECK( gpio_install_isr_service(ESP_INTR_FLAG_LOWMED) );
+  ESP_ERROR_CHECK( gpio_isr_handler_add(DHT_PIN, dht_isr_handler, NULL) );
+  ESP_ERROR_CHECK( gpio_set_intr_type(DHT_PIN, GPIO_INTR_ANYEDGE) );
 
-  dht_queue = xQueueCreate(40, sizeof(char)); RET_ERR(ret);
+  dht_queue = xQueueCreate(40, sizeof(char));
+  if (NULL == dht_queue) {
+    ESP_LOGE(TAG, "Cannot create bitstream queue\n");
+    vTaskDelete(NULL);
+    return;
+  }
 
   for (;;){
     vTaskDelay(dht_info.polling_interval);
     clear_isr_state();
 
     // start reading
-    ret = gpio_intr_disable(DHT_PIN); RET_ERR(ret);
-    ret = gpio_set_direction(DHT_PIN, GPIO_MODE_OUTPUT_OD); RET_ERR(ret);
-    ret = gpio_set_level(DHT_PIN, 0); RET_ERR(ret);
+    ESP_ERROR_CHECK( gpio_intr_disable(DHT_PIN) );
+    ESP_ERROR_CHECK( gpio_set_direction(DHT_PIN, GPIO_MODE_OUTPUT_OD) );
+    ESP_ERROR_CHECK( gpio_set_level(DHT_PIN, 0) );
     vTaskDelay(1);
-    ret = gpio_set_level(DHT_PIN, 1); RET_ERR(ret);
-    ret = gpio_set_direction(DHT_PIN, GPIO_MODE_INPUT); RET_ERR(ret);
-    ret = gpio_intr_enable(DHT_PIN); RET_ERR(ret);
+    ESP_ERROR_CHECK( gpio_set_level(DHT_PIN, 1) );
+    ESP_ERROR_CHECK( gpio_set_direction(DHT_PIN, GPIO_MODE_INPUT) );
+    ESP_ERROR_CHECK( gpio_intr_enable(DHT_PIN) );
 
     char data[5];
     for (int b = 0; b <5; b++) {
@@ -93,7 +95,7 @@ void dht_task(void*) {
           byte = (byte <<1) | bit;
           continue;
         }
-        printf("DHT: OOPS!\n");
+        ESP_LOGE(TAG, "OOPS! Unexpected bit received.");
       }
       data[b] = byte;
     }
@@ -102,9 +104,9 @@ void dht_task(void*) {
       dht_info.relative_humidity = (( (uint16_t)data[0] ) << 8 | data[1] ) * 0.1;
       dht_info.temperature = (((uint16_t)(data[2] & 0x7F)) << 8 | data[3]) * 0.1;
       if (data[2] & 0x80) dht_info.temperature *= -1.0;
-      printf("DHT: %4.1f | %5.1f%%\n", dht_info.temperature, dht_info.relative_humidity);
+      ESP_LOGI(TAG, "%4.1f °C | %5.1f%% RH", dht_info.temperature, dht_info.relative_humidity);
     } else {
-      printf("DHT: Checksum FAILED\n");
+      ESP_LOGE(TAG, "DHT: Checksum FAILED\n");
       dht_info.status = DHT_STATUS_INVALID;
     }
   }
