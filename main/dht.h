@@ -10,7 +10,7 @@ enum DHT_Status {
 struct DHT_Info {
   float temperature =0.0;
   float relative_humidity =0.0;
-  uint64_t polling_interval = pdMS_TO_TICKS(10000);
+  uint64_t polling_interval = pdMS_TO_TICKS(30000);
   DHT_Status status = DHT_STATUS_INVALID;
 };
 
