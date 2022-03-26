@@ -6,6 +6,7 @@
 #include <esp_log.h>
 
 #include "dht.h"
+#include "events.h"
 
 #define DHT_PIN GPIO_NUM_32
 
@@ -73,6 +74,7 @@ void dht_task(void*) {
     return;
   }
 
+  ESP_LOGI(TAG, "Starting loop.");
   for (;;){
     vTaskDelay(dht_info.polling_interval);
     clear_isr_state();
@@ -105,9 +107,12 @@ void dht_task(void*) {
       dht_info.temperature = (((uint16_t)(data[2] & 0x7F)) << 8 | data[3]) * 0.1;
       if (data[2] & 0x80) dht_info.temperature *= -1.0;
       ESP_LOGI(TAG, "%4.1f °C | %5.1f%% RH", dht_info.temperature, dht_info.relative_humidity);
+
+      events.postDhtEvent(dht_info.temperature, dht_info.relative_humidity);
     } else {
       ESP_LOGE(TAG, "DHT: Checksum FAILED\n");
       dht_info.status = DHT_STATUS_INVALID;
+      // events.postDhtStatus(DHT_STATUS_INVALID);
     }
   }
 

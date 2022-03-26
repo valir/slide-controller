@@ -3,21 +3,12 @@
 #include <driver/gpio.h>
 #include <esp_log.h>
 
+#include "mq135.h"
 #include "dht.h"
+#include "events.h"
 
 static const char* TAG = "AIR";
 
-enum MQ135_Status {
-  MQ135_STATUS_OK,
-  MQ135_STATUS_UNCORRECTED,
-  MQ135_STATUS_INVALID
-};
-
-struct MQ135_Info {
-  float ppm = 0.0;
-  uint64_t polling_interval = pdMS_TO_TICKS(10000);
-  MQ135_Status status = MQ135_STATUS_INVALID;
-};
 
 
 MQ135_Info mq135_info;
@@ -37,6 +28,7 @@ void mq135_task(void*) {
       mq135_info.status = MQ135_STATUS_UNCORRECTED;
     }
     ESP_LOGI(TAG, "%5.2f ppm %s", mq135_info.ppm, mq135_info.status == MQ135_STATUS_OK ? "corrected" : "uncorrected");
+    events.postMq135Event(mq135_info.ppm);
   }
 
   vTaskDelete(NULL);
