@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <cstdio>
 #include <esp_event.h>
 #include <esp_err.h>
 #include <esp_log.h>
@@ -9,11 +10,86 @@
 #include <freertos/semphr.h>
 #include <freertos/queue.h>
 #include <mqtt_client.h>
+#include "mq135.h"
+#include "dht.h"
 
 #include <events.h>
 
-
 static const char* TAG = "MQTT";
+#define MQTT_TOPIC_NIGHT_MODE "cmd/barlog/night_mode"
+#define MQTT_TOPIC_LIGHTS "cmd/dormitor/lights"
+#define MQTT_TOPIC_POLL_NIGHT_MODE "state/barlog/night_mode"
+#define MQTT_TOPIC_CALIBRATE_AIR_QUALITY "cmd/dormitor/calibrate_air_quality"
+
+struct MqttSubscription {
+  const char *TOPIC;
+  int qos;
+  int subscription_id;
+  typedef void handler_func(const char*, int);
+  handler_func *func;
+  void subscribe(esp_mqtt_client_handle_t client) {
+    subscription_id = esp_mqtt_client_subscribe(client, TOPIC, qos);
+    ESP_LOGI(TAG, "Subscribed to %s with %u", TOPIC, subscription_id);
+  }
+  void operator()(const char* data, int data_len) {
+    if (func == nullptr) {
+      ESP_LOGE(TAG, "Unhandled topic subscription %s received data %.*s", TOPIC, data_len, data);
+    } else {
+      (*func)(data, data_len);
+    }
+  };
+};
+
+void setDisplayBacklight(bool on);
+bool night_mode = false;
+void handleNightMode(const char* data, int data_len) {
+  // this receives only "on" or "off" string
+  if (strncasecmp(data, "on", data_len) == 0) {
+    night_mode = true;
+    setDisplayBacklight(false);
+    return;
+  }
+  if (strncasecmp(data, "off", data_len) == 0) {
+    night_mode = false;
+    setDisplayBacklight(true);
+    return;
+  }
+  ESP_LOGE(TAG, "handleNightMode received unknown parameter %.*s", data_len, data);
+}
+
+extern TaskHandle_t mq135TaskHandle;
+void handleCalibrateAirQuality(const char *data, int data_len) {
+  // payload contains 1 float, the calibrated ppm, as the temperature and rh
+  // is already known
+  if (data_len <3) {
+    ESP_LOGE(TAG, "Received invalid calibration payload");
+    return;
+  }
+  float cal_ppm;
+  int args_parsed = sscanf(data, "%f", &cal_ppm);
+  if (1 == args_parsed) {
+    if (cal_ppm > 400.0 && cal_ppm <2000.) {
+      mq135_info.cal_ppm = cal_ppm;
+    } else {
+      ESP_LOGE(TAG, "Received invalid calibration ppm");
+      return;
+    }
+    mq135_info.cal_temperature = dht_info.temperature;
+    mq135_info.cal_rel_humidity = dht_info.relative_humidity;
+    xTaskNotify(mq135TaskHandle, 0x01, eSetBits);
+  } else {
+    ESP_LOGE(TAG, "Received invalid calibration payload - not enough parameters");
+  }
+}
+
+struct MqttSubscription mqttSubscriptions[] = {
+  { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
+  { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
+  { .TOPIC = MQTT_TOPIC_CALIBRATE_AIR_QUALITY, .qos = 0, .func = handleCalibrateAirQuality },
+  { .TOPIC = nullptr },
+};
+
+
 static const char* CONFIG_BROKER_URL = "mqtt://bb-master";
 #define WALL_CONTROLLER_NAME "dormitor"
 #define MQTT_PREFIX "barlog/" WALL_CONTROLLER_NAME
@@ -33,8 +109,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_subscribe(client, "/barlog/dormitor/lumina_pat_vest", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        {
+          MqttSubscription *subscription = &mqttSubscriptions[0];
+          while (subscription->TOPIC) {
+            subscription->subscribe(client);
+            subscription++;
+          }
+        }
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -53,8 +134,15 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_DATA:
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        {
+          MqttSubscription *subscription = &mqttSubscriptions[0];
+          while (subscription->TOPIC) {
+            if (strncmp(subscription->TOPIC, event->topic, event->topic_len) == 0){
+              (*subscription)(event->data, event->data_len);
+            }
+            subscription++;
+          }
+        }
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");

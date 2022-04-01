@@ -22,29 +22,32 @@ Events::~Events(){
 }
 
 void Events::postDhtEvent(float temperature, float humidity) {
-  Event eventTemperature = {
+  postEvent(Event{
     .event = EVENT_SENSOR_TEMPERATURE,
     .temperature = temperature
-  };
-  Event eventHumidity = {
+    });
+  postEvent(Event{
     .event = EVENT_SENSOR_HUMIDITY,
     .relative_humidity = humidity
-  };
-  if (pdPASS != xQueueSendToBack(event_queue, &eventTemperature, 10) ){
-    ESP_LOGE(TAG, "Failed to post Temperature event");
-  }
-  if (pdPASS != xQueueSendToBack(event_queue, &eventHumidity, 10)){
-    ESP_LOGE(TAG, "Failed to post Humidity event");
-  }
+    });
 }
 
 void Events::postMq135Event(float air_quality) {
-  Event eventAirQuality = {
+  postEvent(Event{
     .event = EVENT_SENSOR_AIR_QUALITY,
     .air_quality = air_quality
-  };
-  if (pdPASS != xQueueSendToBack(event_queue, &eventAirQuality, 10)){
-    ESP_LOGE(TAG, "Failed to post Humidity event");
+  });
+}
+
+void Events::postTouchedEvent() {
+  postEvent(Event{
+    .event = EVENT_SCREEN_TOUCHED
+  });
+}
+
+void Events::postEvent(Event&& theEvent) {
+  if (pdPASS != xQueueSendToBack(event_queue, &theEvent, 10)){
+    ESP_LOGE(TAG, "Failed to post %d event", theEvent.event);
   }
 }
 
@@ -69,6 +72,9 @@ MqttEventInfo Events::waitNextEvent() {
       mqttEvent.name = "air_quality";
       snprintf(data, DATA_BUSIZE, "%4.1f", event.air_quality);
       break;
+    case EVENT_SCREEN_TOUCHED:
+      mqttEvent.name = "touched";
+      break; // this event does not associate data
     default:
       ESP_LOGE(TAG, "Unknown event type %d", event.event);
   }

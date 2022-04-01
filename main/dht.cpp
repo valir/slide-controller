@@ -14,6 +14,7 @@ static const char* TAG = "TEMP";
 
 DHT_Info dht_info;
 
+float temperature_calibration = -1.5f;
 int dht_isr_call_count = 0;
 uint64_t dht_pin_raise_time;
 bool dht_wait_init_pulse = true;
@@ -105,6 +106,7 @@ void dht_task(void*) {
       dht_info.status = DHT_STATUS_OK;
       dht_info.relative_humidity = (( (uint16_t)data[0] ) << 8 | data[1] ) * 0.1;
       dht_info.temperature = (((uint16_t)(data[2] & 0x7F)) << 8 | data[3]) * 0.1;
+      dht_info.temperature += temperature_calibration;
       if (data[2] & 0x80) dht_info.temperature *= -1.0;
       ESP_LOGI(TAG, "%4.1f °C | %5.1f%% RH", dht_info.temperature, dht_info.relative_humidity);
 

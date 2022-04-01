@@ -19,6 +19,7 @@ bool idle_hook() {
   return true;
 }
 
+void display_allocate_heap();
 void dht_task(void*);
 void mq135_task(void*);
 void rs485_task(void*);
@@ -30,6 +31,7 @@ extern "C" void app_main() {
 
   // initArduino();
   nvs_flash_init();
+  display_allocate_heap(); // allocate early so we get that large chunk of DMA-capable RAM
   vTaskDelay(100);
   // auto err = esp_register_freertos_idle_hook_for_cpu(idle_hook, 0);
   // if (ESP_OK != err) {

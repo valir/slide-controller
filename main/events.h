@@ -8,7 +8,8 @@ enum WallControllerEvent {
   EVENT_STATUS_UPDATE,
   EVENT_SENSOR_TEMPERATURE,
   EVENT_SENSOR_HUMIDITY,
-  EVENT_SENSOR_AIR_QUALITY
+  EVENT_SENSOR_AIR_QUALITY,
+  EVENT_SCREEN_TOUCHED
 };
 
 enum WallControllerStatus {
@@ -33,9 +34,11 @@ public:
   virtual ~Events ();
   void postDhtEvent(float temperature, float humidity);
   void postMq135Event(float air_quality);
+  void postTouchedEvent();
   MqttEventInfo waitNextEvent();
 
 private:
+  void postEvent(Event&& theEvent);
   QueueHandle_t event_queue;
 };
 
