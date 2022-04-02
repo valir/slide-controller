@@ -19,3 +19,6 @@
 [submodule "components/lvgl_esp32_drivers"]
 	path = components/lvgl_esp32_drivers
 	url = https://github.com/lvgl/lvgl_esp32_drivers.git
+[submodule "components/esp32DHT"]
+	path = components/esp32DHT
+	url = git@github.com:valir/esp32DHT.git
