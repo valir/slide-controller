@@ -10,6 +10,7 @@
 static const char* TAG = "MAIN";
 
 TaskHandle_t displayTaskHandle = NULL;
+TaskHandle_t dhtTaskHandle = NULL;
 TaskHandle_t mq135TaskHandle = NULL;
 TaskHandle_t rs485TaskHandle = NULL;
 TaskHandle_t touchScreenTaskHandle = NULL;
@@ -40,7 +41,7 @@ extern "C" void app_main() {
 
   ESP_LOGI(TAG, "Starting tasks...");
   xTaskCreatePinnedToCore(displayTask, "displayTask", 8192, NULL, 1, &displayTaskHandle, 1);
-  xTaskCreatePinnedToCore(dht_task, "dhtTask", 8192, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(dht_task, "dhtTask", 8192, NULL, 2, &dhtTaskHandle, 1);
   xTaskCreatePinnedToCore(mq135_task, "mq135Task", 4096, NULL, 1, &mq135TaskHandle, 1);
   xTaskCreatePinnedToCore(touchScreenTask, "touchTask", 8192, NULL, 1, &touchScreenTaskHandle, 1);
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 8192, NULL, 1, &wifiTaskHandle, 1);
