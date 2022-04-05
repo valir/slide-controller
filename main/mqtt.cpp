@@ -10,8 +10,7 @@
 #include <freertos/semphr.h>
 #include <freertos/queue.h>
 #include <mqtt_client.h>
-#include "mq135.h"
-#include "dht.h"
+#include "sensors.h"
 
 #include <events.h>
 
@@ -57,30 +56,7 @@ void handleNightMode(const char* data, int data_len) {
   ESP_LOGE(TAG, "handleNightMode received unknown parameter %.*s", data_len, data);
 }
 
-extern TaskHandle_t mq135TaskHandle;
-void handleCalibrateAirQuality(const char *data, int data_len) {
-  // payload contains 1 float, the calibrated ppm, as the temperature and rh
-  // is already known
-  if (data_len <3) {
-    ESP_LOGE(TAG, "Received invalid calibration payload");
-    return;
-  }
-  float cal_ppm;
-  int args_parsed = sscanf(data, "%f", &cal_ppm);
-  if (1 == args_parsed) {
-    if (cal_ppm > 400.0 && cal_ppm <2000.) {
-      mq135_info.cal_ppm = cal_ppm;
-    } else {
-      ESP_LOGE(TAG, "Received invalid calibration ppm");
-      return;
-    }
-    mq135_info.cal_temperature = dht_info.temperature;
-    mq135_info.cal_rel_humidity = dht_info.relative_humidity;
-    xTaskNotify(mq135TaskHandle, 0x01, eSetBits);
-  } else {
-    ESP_LOGE(TAG, "Received invalid calibration payload - not enough parameters");
-  }
-}
+void handleCalibrateAirQuality(const char *data, int data_len);
 
 struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },

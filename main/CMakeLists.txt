@@ -1,8 +1,7 @@
 idf_component_register(
   SRCS
     "wall-controller.cpp"
-    dht.cpp
-    mq135.cpp
+    sensors.cpp
     rs485.cpp
     display.cpp
     touch.cpp

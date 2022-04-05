@@ -7,8 +7,7 @@
 #include <lvgl/lvgl.h>
 
 #include "hal/lv_hal_disp.h"
-#include "mq135.h"
-#include "dht.h"
+#include "sensors.h"
 
 // Pins for the ILI9341 and ESP32
 #define LCD_DC 4
