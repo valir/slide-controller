@@ -19,6 +19,8 @@ float temperature_calibration = -1.5f;
 MQ135_Info mq135_info;
 MQ135 mq135(GPIO_NUM_36);
 
+extern TaskHandle_t displayTaskHandle;
+
 static void dht_data_recv(float h, float t)
 {
   dht_info.status = DHT_STATUS_OK;
@@ -38,6 +40,9 @@ static void dht_data_recv(float h, float t)
   }
   ESP_LOGI(TAG, "%5.2f ppm %s", mq135_info.ppm, mq135_info.status == MQ135_STATUS_OK ? "corrected" : "uncorrected");
   events.postMq135Event(mq135_info.ppm);
+
+  // now is the time to also update the display
+  xTaskNotify(displayTaskHandle, 0x01, eSetBits);
 }
 
 static void dht_error(uint8_t error)

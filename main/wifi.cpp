@@ -8,9 +8,9 @@
 #include <simpleDSTadjust.h>
 
 static const char* TAG = "WIFI";
-static const char* WIFI_SSID = "workers";
-static const char* WIFI_PASS = "Ahboo4ooYei0Gaikahma";
-static const char* WIFI_HOSTNAME = "dormitor";
+static const char* WIFI_SSID = ENV_WIFI_SSID;
+static const char* WIFI_PASS = ENV_WIFI_PASS;
+static const char* WIFI_HOSTNAME = ENV_HOSTNAME;
 
 void connectWifi() {
   if (WiFi.status() == WL_CONNECTED) return;

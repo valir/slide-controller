@@ -8,6 +8,7 @@
 
 #include "hal/lv_hal_disp.h"
 #include "sensors.h"
+#include <statusbar.h>
 
 // Pins for the ILI9341 and ESP32
 #define LCD_DC 4
@@ -145,41 +146,46 @@ void displayTask(void *) {
 
   /*Create screen objects*/
 
-  label = lv_label_create(lv_scr_act());
-  lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-  lv_label_set_text(label, "Press a button");
-  lv_obj_set_size(label, 240, 40);
-  lv_obj_set_pos(label, 0, 15);
+  StatusBar status_bar(lv_scr_act());
 
-  // create_aqi_display();
-  // create_temp_display();
-
-  btn1 = lv_btn_create(lv_scr_act());
-  // lv_obj_set_event_cb(btn1, event_handler_btn);
-  lv_obj_set_width(btn1, 70);
-  lv_obj_set_height(btn1, 32);
-  lv_obj_set_pos(btn1, 32, 100);
-
-  lv_obj_t * label1 = lv_label_create(btn1);
-  lv_label_set_text(label1, "Hello");
-
-  btn2 = lv_btn_create(lv_scr_act());
-  // lv_obj_set_event_cb(btn2, event_handler_btn);
-  lv_obj_set_width(btn2, 70);
-  lv_obj_set_height(btn2, 32);
-  lv_obj_set_pos(btn2, 142, 100);
-
-  lv_obj_t * label2 = lv_label_create(btn2);
-  lv_label_set_text(label2, "Goodbye");
+  // label = lv_label_create(lv_scr_act());
+  // lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+  // lv_label_set_text(label, "Press a button");
+  // lv_obj_set_size(label, 240, 40);
+  // lv_obj_set_pos(label, 0, 15);
+  //
+  // // create_aqi_display();
+  // // create_temp_display();
+  //
+  // btn1 = lv_btn_create(lv_scr_act());
+  // // lv_obj_set_event_cb(btn1, event_handler_btn);
+  // lv_obj_set_width(btn1, 70);
+  // lv_obj_set_height(btn1, 32);
+  // lv_obj_set_pos(btn1, 32, 100);
+  //
+  // lv_obj_t * label1 = lv_label_create(btn1);
+  // lv_label_set_text(label1, "Hello");
+  //
+  // btn2 = lv_btn_create(lv_scr_act());
+  // // lv_obj_set_event_cb(btn2, event_handler_btn);
+  // lv_obj_set_width(btn2, 70);
+  // lv_obj_set_height(btn2, 32);
+  // lv_obj_set_pos(btn2, 142, 100);
+  //
+  // lv_obj_t * label2 = lv_label_create(btn2);
+  // lv_label_set_text(label2, "Goodbye");
 
   lv_scr_load(lv_scr_act());
 
   for (;;) {
-  // char string_buf[128];
-  // snprintf(string_buf, 128, "%5.2f °C RH %5.2f\n%5.2f ppm", dht_info.temperature, dht_info.relative_humidity, mq135_info.ppm);
-
+    if (lv_disp_get_inactive_time(NULL) < 1000) {
+      lv_task_handler();
+    } else {
+      // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));
+      // sleep();
+      // ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LV_TICK_PERIOD_MS * 1000));
+    }
     vTaskDelay(pdMS_TO_TICKS(10));
-    lv_task_handler();
   }
 }
 

@@ -11,8 +11,7 @@
 
 
 #define TOUCH_CS 14
-//#define TOUCH_IRQ 2 // enable this line for older ArduiTouch or AZ-Touch ESP pcb
-#define TOUCH_IRQ 27 // enable this line for new AZ-Touch MOD pcb
+#define TOUCH_IRQ 27
 
 #define HAVE_TOUCHPAD
 
@@ -87,7 +86,7 @@ void touchScreenTask(void*) {
       if (night_mode) {
         setDisplayBacklight(true);
 
-        esp_timer_stop(timer); // stop timer if already running
+        esp_timer_stop(timer); // stop timer if already running, no error check on purpose
         ESP_ERROR_CHECK(esp_timer_start_once(timer, 5000 * 1000));
       }
     }

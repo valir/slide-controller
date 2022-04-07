@@ -5,6 +5,7 @@
 #include <esp_freertos_hooks.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
+#include <esp32-hal-gpio.h>
 #include <SPI.h>
 
 static const char* TAG = "MAIN";
@@ -26,12 +27,32 @@ void displayTask(void*);
 void touchScreenTask(void*);
 void wifiTask(void*);
 
+constexpr gpio_num_t beep_pin = GPIO_NUM_21;
+static void beep_stop(void*) {
+  ESP_ERROR_CHECK(gpio_set_level(beep_pin, 0));
+}
+
+void beep_start(uint16_t ms) {
+  ESP_ERROR_CHECK(gpio_set_level(beep_pin, 1));
+  ESP_ERROR_CHECK(gpio_set_direction(beep_pin, GPIO_MODE_OUTPUT));
+  ESP_ERROR_CHECK(gpio_pullup_en(beep_pin));
+  esp_timer_create_args_t timer_args = {
+    .callback = beep_stop,
+    .arg = nullptr,
+    .dispatch_method = ESP_TIMER_TASK,
+    .skip_unhandled_events = 1
+  };
+  esp_timer_handle_t timer_handle;
+  ESP_ERROR_CHECK( esp_timer_create(&timer_args, &timer_handle) );
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, ms*1000) );
+}
+
 extern "C" void app_main() {
 
   // initArduino();
   nvs_flash_init();
   display_allocate_heap(); // allocate early so we get that large chunk of DMA-capable RAM
-  vTaskDelay(100);
+  beep_start(300);
   // auto err = esp_register_freertos_idle_hook_for_cpu(idle_hook, 0);
   // if (ESP_OK != err) {
   //   printf("Error registering idle hook %d", err);
