@@ -8,7 +8,9 @@
 
 #include "hal/lv_hal_disp.h"
 #include "sensors.h"
-#include <statusbar.h>
+#include "statusbar.h"
+#include "mainpanel.h"
+#include "display.h"
 
 // Pins for the ILI9341 and ESP32
 #define LCD_DC 4
@@ -147,6 +149,7 @@ void displayTask(void *) {
   /*Create screen objects*/
 
   StatusBar status_bar(lv_scr_act());
+  MainPanel main_panel(lv_scr_act());
 
   // label = lv_label_create(lv_scr_act());
   // lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
@@ -177,15 +180,26 @@ void displayTask(void *) {
 
   lv_scr_load(lv_scr_act());
 
+  bool initializing = true;
   for (;;) {
-    if (lv_disp_get_inactive_time(NULL) < 1000) {
+    if (lv_disp_get_inactive_time(NULL) < 1000 || dht_info.status == DHT_STATUS_INITIALIZING) {
       lv_task_handler();
     } else {
       // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));
       // sleep();
       // ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LV_TICK_PERIOD_MS * 1000));
     }
-    vTaskDelay(pdMS_TO_TICKS(10));
+    uint32_t notif_flags = 0;
+    if (pdTRUE == xTaskNotifyWait(0x0, ULONG_MAX, &notif_flags, pdMS_TO_TICKS(10))) {
+      if (notif_flags & DISPLAY_NOTIFY_TOUCH) {
+        lv_task_handler();
+      }
+      if (notif_flags & DISPLAY_UPDATE_WIDGETS) {
+        status_bar.update();
+        main_panel.update();
+        lv_task_handler();
+      }
+    }
   }
 }
 

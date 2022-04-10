@@ -8,6 +8,7 @@
 #include <XPT2046_Touchscreen.h>
 #include <lvgl/lvgl.h>
 #include "events.h"
+#include "display.h"
 
 
 #define TOUCH_CS 14
@@ -62,7 +63,7 @@ static void turn_off_screen_cb(void*){
 }
 
 void touchScreenTask(void*) {
-  if ( !ts.begin() ) {
+  if ( !ts.begin(displayTaskHandle, DISPLAY_NOTIFY_TOUCH) ) {
     ESP_LOGE(TAG, "Cannot setup touchscreen");
     vTaskDelete(NULL);
     return;

@@ -10,6 +10,7 @@ idf_component_register(
     mqtt.cpp
     events.cpp
     statusbar.cpp
+    mainpanel.cpp
   INCLUDE_DIRS ".")
 
 target_compile_options(${COMPONENT_TARGET} PUBLIC

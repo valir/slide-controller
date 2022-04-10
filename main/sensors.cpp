@@ -7,6 +7,7 @@
 
 #include "sensors.h"
 #include "events.h"
+#include "display.h"
 
 #define DHT_PIN GPIO_NUM_32
 
@@ -42,7 +43,7 @@ static void dht_data_recv(float h, float t)
   events.postMq135Event(mq135_info.ppm);
 
   // now is the time to also update the display
-  xTaskNotify(displayTaskHandle, 0x01, eSetBits);
+  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
 }
 
 static void dht_error(uint8_t error)

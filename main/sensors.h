@@ -3,6 +3,7 @@
 
 enum DHT_Status {
   DHT_STATUS_OK,
+  DHT_STATUS_INITIALIZING,
   DHT_STATUS_BAD_CHECKSUM,
   DHT_STATUS_INVALID
 };
@@ -11,13 +12,14 @@ struct DHT_Info {
   float temperature =0.0;
   float relative_humidity =0.0;
   uint64_t polling_interval = pdMS_TO_TICKS(30000);
-  DHT_Status status = DHT_STATUS_INVALID;
+  DHT_Status status = DHT_STATUS_INITIALIZING;
 };
 
 extern DHT_Info dht_info;
 
 enum MQ135_Status {
   MQ135_STATUS_OK,
+  MQ135_STATUS_INITIALIZING,
   MQ135_STATUS_UNCORRECTED,
   MQ135_STATUS_INVALID
 };
@@ -25,7 +27,7 @@ enum MQ135_Status {
 struct MQ135_Info {
   float ppm = 0.;
   uint64_t polling_interval = pdMS_TO_TICKS(30000);
-  MQ135_Status status = MQ135_STATUS_INVALID;
+  MQ135_Status status = MQ135_STATUS_INITIALIZING;
   float cal_ppm = 0.;
   float cal_temperature = 0.;
   float cal_rel_humidity = 0.;
