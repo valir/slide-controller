@@ -1,120 +1,148 @@
-#include <MQ135.h>
-#include <algorithm>
-#include <esp32DHT.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <list>
-#include <vector>
+#include <driver/spi_master.h>
+#include <driver/gpio.h>
 
 #include "display.h"
 #include "events.h"
 #include "sensors.h"
 
-#define DHT_PIN GPIO_NUM_32
+#define PIN_NUM_MISO 19
+#define PIN_NUM_MOSI 23
+#define PIN_NUM_CLK 18
+#define PIN_NUM_CS 33
+
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 static const char* TAG = "SENSORS";
 
-DHT22 temp_sensor;
-DHT_Info dht_info;
 float temperature_calibration = -1.5f;
-
-MQ135_Info mq135_info;
-MQ135 mq135(GPIO_NUM_36);
-constexpr size_t PPM_HIST_SIZE = 9; // keep this an odd number
-std::list<float> ppm_hist_data;
 
 extern TaskHandle_t displayTaskHandle;
 
-static void dht_data_recv(float h, float t)
-{
-  dht_info.status = DHT_STATUS_OK;
-  dht_info.relative_humidity = h;
-  dht_info.temperature = t;
-  dht_info.temperature += temperature_calibration;
-  ESP_LOGI(TAG, "%4.1f °C | %5.1f%% RH", dht_info.temperature,
-      dht_info.relative_humidity);
-  events.postDhtEvent(dht_info.temperature, dht_info.relative_humidity);
+Sensors_Info sensors_info;
 
-  float ppm;
-  if (dht_info.status == DHT_STATUS_OK) {
-    ppm = mq135.getCorrectedPPM(
-        dht_info.temperature, dht_info.relative_humidity);
-    mq135_info.status = MQ135_STATUS_OK;
-  } else {
-    ppm = mq135_info.ppm = mq135.getPPM();
-    mq135_info.status = MQ135_STATUS_UNCORRECTED;
-  }
-  ppm_hist_data.push_back(ppm);
-  if (ppm_hist_data.size() > PPM_HIST_SIZE) {
-    ppm_hist_data.pop_front();
-    std::vector<float> median_data(
-        ppm_hist_data.begin(), ppm_hist_data.end());
-    std::sort(median_data.begin(), median_data.end());
-    mq135_info.ppm = median_data[PPM_HIST_SIZE / 2 + 1];
-  } else {
-    mq135_info.ppm = ppm; // send unfiltered data up to the moment when we
-                          // have enough data
-  }
+spi_device_handle_t bme_dev;
 
-  // mq135_info.ppm
-  ESP_LOGI(TAG, "%5.2f ppm %s", mq135_info.ppm,
-      mq135_info.status == MQ135_STATUS_OK ? "corrected" : "uncorrected");
-  events.postMq135Event(mq135_info.ppm);
+class BME680_ReadTransaction {
+  public:
+    BME680_ReadTransaction(uint8_t register_address) {
+      if (0x80 & register_address) {
+      // TODO perform automatic page change command
+      }
+      _trans.tx_data[0] = 0x80 | register_address;
+    }
+  protected:
+    void execute() {
+      _trans.flags = SPI_TRANS_USE_TXDATA;
+      _trans.cmd = 1;
+      _trans.addr = 7;
+      _trans.length = 0;
+      _trans.rxlength = 16;
+      ESP_ERROR_CHECK(spi_device_polling_transmit(bme_dev, &_trans));
+    }
+  private:
+    spi_transaction_t _trans;
+};
 
-  // now is the time to also update the display
-  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
+class BME680_WriteTransaction {
+};
+
+void select_oversampling() {
 }
 
-static void dht_error(uint8_t error)
-{
-  ESP_LOGW(TAG, "Sensor error: %d", error);
+void select_iir_filter() {
 }
 
-static void dht_periodic_read(void*) { temp_sensor.read(); }
+void select_gas_params() {
+}
+
+void start_measure() {
+}
+
+void initiate_measurement() {
+  select_oversampling();
+  select_iir_filter();
+  select_gas_params();
+  start_measure();
+}
+
+void read_raw_sensors() {
+}
+
+void compute_sensors() {
+  // using BSec library
+}
+
+static void sensors_periodic_read(void*) {
+  initiate_measurement();
+  read_raw_sensors();
+  compute_sensors();
+}
+
+static void sensors_state_backup(void*) {
+  // TODO
+}
+
+static void restore_sensors_state() {
+  // TODO
+}
 
 void sensors_task(void*)
 {
-  vTaskDelay(pdMS_TO_TICKS(60000)); // wait for the sensors to settle
+  vTaskDelay(pdMS_TO_TICKS(1*1000)); // wait for other initializations to take
+                                     // place
 
-  temp_sensor.setup(DHT_PIN);
-  temp_sensor.onData(dht_data_recv);
-  temp_sensor.onError(dht_error);
+  ESP_LOGI(TAG, "Initializing bus SPI3");
+  spi_bus_config_t buscfg = {
+    .mosi_io_num = PIN_NUM_MOSI,
+    .miso_io_num = PIN_NUM_MISO,
+    .sclk_io_num = PIN_NUM_CLK,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    .data4_io_num = -1,
+    .data5_io_num = -1,
+    .data6_io_num = -1,
+    .data7_io_num = -1,
+    .max_transfer_sz = 32
+  };
+  ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-  esp_timer_create_args_t timer_args = { .callback = dht_periodic_read,
+  spi_device_interface_config_t bmecfg = {
+    .command_bits = 1, // command is READ or WRITE
+    .address_bits = 7,
+    .mode = 0,
+    .clock_speed_hz = (1*1000*1000), // 1MHz even though chip supports 10Mhz
+    .input_delay_ns = 40,
+    .spics_io_num = PIN_NUM_CS,
+    .flags = SPI_DEVICE_HALFDUPLEX,
+    .queue_size = 1,
+  };
+  ESP_ERROR_CHECK(spi_bus_add_device(SPI3_HOST, &bmecfg, &bme_dev));
+
+  // retrieve any previously saved state from MQTT before proceeding
+  restore_sensors_state();
+
+  ESP_LOGI(TAG, "Starting sensors periodic read");
+  esp_timer_create_args_t timer_args = { .callback = sensors_periodic_read,
     .arg = nullptr,
     .dispatch_method = ESP_TIMER_TASK,
     .skip_unhandled_events = 1 };
   esp_timer_handle_t timer_handle;
   ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 30000000));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 10*1000*1000));
+
+  ESP_LOGI(TAG, "Starting sensors state periodic backup");
+  esp_timer_create_args_t backup_timer_args = { .callback = sensors_state_backup,
+    .arg = nullptr,
+    .dispatch_method = ESP_TIMER_TASK,
+    .skip_unhandled_events = 1 };
+  esp_timer_handle_t backup_timer_handle;
+  ESP_ERROR_CHECK(esp_timer_create(&backup_timer_args, &backup_timer_handle));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(backup_timer_handle, 3600*1000*1000));
+
   vTaskDelete(nullptr);
 }
 
-void handleCalibrateAirQuality(const char* data, int data_len)
-{
-  // payload contains 1 float, the calibrated ppm, as the temperature and rh
-  // is already known
-  if (data_len < 3) {
-    ESP_LOGE(TAG, "Received invalid calibration payload");
-    return;
-  }
-  float cal_ppm;
-  int args_parsed = sscanf(data, "%f", &cal_ppm);
-  if (1 == args_parsed) {
-    if (cal_ppm > 400.0 && cal_ppm < 2000.) {
-      mq135_info.cal_ppm = cal_ppm;
-    } else {
-      ESP_LOGE(TAG, "Received invalid calibration ppm");
-      return;
-    }
-    mq135_info.cal_temperature = dht_info.temperature;
-    mq135_info.cal_rel_humidity = dht_info.relative_humidity;
-    mq135.calibrateRZero(mq135_info.cal_ppm, mq135_info.cal_temperature,
-        mq135_info.cal_rel_humidity);
-  } else {
-    ESP_LOGE(
-        TAG, "Received invalid calibration payload - not enough parameters");
-  }
-}

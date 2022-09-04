@@ -1,5 +1,5 @@
-#ifndef DHT_H_INCLUDED
-#define DHT_H_INCLUDED
+#ifndef SENSORS_H_INCLUDED
+#define SENSORS_H_INCLUDED
 
 enum DHT_Status {
   DHT_STATUS_OK,
@@ -9,10 +9,6 @@ enum DHT_Status {
 };
 
 struct DHT_Info {
-  float temperature =0.0;
-  float relative_humidity =0.0;
-  uint64_t polling_interval = pdMS_TO_TICKS(30000);
-  DHT_Status status = DHT_STATUS_INITIALIZING;
 };
 
 extern DHT_Info dht_info;
@@ -24,14 +20,18 @@ enum MQ135_Status {
   MQ135_STATUS_INVALID
 };
 
-struct MQ135_Info {
+struct Sensors_Info {
+  float temperature =0.0;
+  float relative_humidity =0.0;
+  uint64_t temp_polling_interval = pdMS_TO_TICKS(30000);
+  DHT_Status temp_status = DHT_STATUS_INITIALIZING;
   float ppm = 0.;
-  uint64_t polling_interval = pdMS_TO_TICKS(30000);
-  MQ135_Status status = MQ135_STATUS_INITIALIZING;
+  uint64_t voc_polling_interval = pdMS_TO_TICKS(30000);
+  MQ135_Status voc_status = MQ135_STATUS_INITIALIZING;
   float cal_ppm = 0.;
   float cal_temperature = 0.;
   float cal_rel_humidity = 0.;
 };
 
-extern MQ135_Info mq135_info;
-#endif // DHT_H_INCLUDED
+extern Sensors_Info sensors_info;
+#endif // SENSORS_H_INCLUDED

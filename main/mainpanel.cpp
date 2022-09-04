@@ -90,28 +90,28 @@ void MainPanel::update()
   }
 
   lv_meter_set_indicator_end_value(
-      temp_meter, temp_actual, dht_info.temperature);
+      temp_meter, temp_actual, sensors_info.temperature);
   static char txt_buffer[128];
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
       "%s camera: %4.1f °C %c \n %s ceruta: %4.1f °C %c", "#00ff00",
-      round(dht_info.temperature), '#', "#0000ff", 0., '#');
+      round(sensors_info.temperature), '#', "#0000ff", 0., '#');
   lv_label_set_text(temp_label, txt_buffer);
 
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]), "%4.1f %%",
-      dht_info.relative_humidity);
+      sensors_info.relative_humidity);
   lv_label_set_text(rh_label, txt_buffer);
-  lv_bar_set_value(rh_meter, round(dht_info.relative_humidity), LV_ANIM_ON);
+  lv_bar_set_value(rh_meter, round(sensors_info.relative_humidity), LV_ANIM_ON);
 
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
       "%s %4.0f ppm %c",
-      mq135_info.ppm < 850.
+      sensors_info.ppm < 850.
           ? "#00ff00"
-          : (mq135_info.ppm < 1000. ? "#ffff00" : "#ff0000"),
-      mq135_info.ppm, '#');
+          : (sensors_info.ppm < 1000. ? "#ffff00" : "#ff0000"),
+      sensors_info.ppm, '#');
   lv_label_set_text(co2_label, txt_buffer);
   lv_led_set_color(co2_meter,
-      lv_palette_main(mq135_info.ppm < 850.
+      lv_palette_main(sensors_info.ppm < 850.
               ? LV_PALETTE_GREEN
-              : (mq135_info.ppm < 1000. ? LV_PALETTE_YELLOW
+              : (sensors_info.ppm < 1000. ? LV_PALETTE_YELLOW
                                         : LV_PALETTE_RED)));
 }

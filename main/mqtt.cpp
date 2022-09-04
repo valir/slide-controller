@@ -18,7 +18,6 @@ static const char* TAG = "MQTT";
 #define MQTT_TOPIC_NIGHT_MODE "cmd/barlog/night_mode"
 #define MQTT_TOPIC_LIGHTS "cmd/dormitor/lights"
 #define MQTT_TOPIC_POLL_NIGHT_MODE "state/barlog/night_mode"
-#define MQTT_TOPIC_CALIBRATE_AIR_QUALITY "cmd/dormitor/calibrate_air_quality"
 
 struct MqttSubscription {
   const char *TOPIC;
@@ -56,13 +55,10 @@ void handleNightMode(const char* data, int data_len) {
   ESP_LOGE(TAG, "handleNightMode received unknown parameter %.*s", data_len, data);
 }
 
-void handleCalibrateAirQuality(const char *data, int data_len);
-
 struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
   { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
-  { .TOPIC = MQTT_TOPIC_CALIBRATE_AIR_QUALITY, .qos = 0, .func = handleCalibrateAirQuality },
-  { .TOPIC = nullptr },
+  { .TOPIC = nullptr }
 };
 
 

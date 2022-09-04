@@ -71,9 +71,9 @@ lv_obj_t *btn1;
 lv_obj_t *btn2;
 lv_obj_t *label;
 
-static void event_handler_btn(lv_obj_t *obj, lv_event_t event) {
-
-}
+// static void event_handler_btn(lv_obj_t *obj, lv_event_t event) {
+//
+// }
 
 void create_temp_display() {
 
@@ -180,9 +180,8 @@ void displayTask(void *) {
 
   lv_scr_load(lv_scr_act());
 
-  bool initializing = true;
   for (;;) {
-    if (lv_disp_get_inactive_time(NULL) < 1000 || dht_info.status == DHT_STATUS_INITIALIZING) {
+    if (lv_disp_get_inactive_time(NULL) < 1000 || sensors_info.temp_status == DHT_STATUS_INITIALIZING) {
       lv_task_handler();
     } else {
       // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));
