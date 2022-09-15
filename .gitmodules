@@ -22,3 +22,6 @@
 [submodule "components/esp32DHT"]
 	path = components/esp32DHT
 	url = git@github.com:valir/esp32DHT.git
+[submodule "components/BME68x-Sensor-API"]
+	path = components/BME68x-Sensor-API
+	url = git@github.com:valir/BME68x-Sensor-API.git
