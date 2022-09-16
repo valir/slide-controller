@@ -6,3 +6,4 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(wall-controller)
 
 set(MINIGRAFX_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/lib/minigrafx)
+

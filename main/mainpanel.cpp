@@ -92,26 +92,31 @@ void MainPanel::update()
   lv_meter_set_indicator_end_value(
       temp_meter, temp_actual, sensors_info.temperature);
   static char txt_buffer[128];
+  // snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
+  //     "%s camera: %4.1f °C %c \n %s ceruta: %4.1f °C %c", "#00ff00",
+  //     sensors_info.temperature, '#', "#0000ff", 0., '#');
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
-      "%s camera: %4.1f °C %c \n %s ceruta: %4.1f °C %c", "#00ff00",
-      round(sensors_info.temperature), '#', "#0000ff", 0., '#');
+      "%s camera: %4.1f °C %c", "#00ff00", sensors_info.temperature, '#');
   lv_label_set_text(temp_label, txt_buffer);
 
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]), "%4.1f %%",
       sensors_info.relative_humidity);
   lv_label_set_text(rh_label, txt_buffer);
-  lv_bar_set_value(rh_meter, round(sensors_info.relative_humidity), LV_ANIM_ON);
+  lv_bar_set_value(
+      rh_meter, round(sensors_info.relative_humidity), LV_ANIM_ON);
 
+  static auto constexpr IAQ_GOOD_MAX = 50.;
+  static auto constexpr IAQ_AVERAGE_MAX = 100.;
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
-      "%s %4.0f ppm %c",
-      sensors_info.ppm < 850.
+      "%s %4.0f iaq %c",
+      sensors_info.iaq <= IAQ_GOOD_MAX
           ? "#00ff00"
-          : (sensors_info.ppm < 1000. ? "#ffff00" : "#ff0000"),
-      sensors_info.ppm, '#');
+          : (sensors_info.iaq <= IAQ_AVERAGE_MAX ? "#ffff00" : "#ff0000"),
+      sensors_info.iaq, '#');
   lv_label_set_text(co2_label, txt_buffer);
   lv_led_set_color(co2_meter,
-      lv_palette_main(sensors_info.ppm < 850.
+      lv_palette_main(sensors_info.iaq <= IAQ_GOOD_MAX
               ? LV_PALETTE_GREEN
-              : (sensors_info.ppm < 1000. ? LV_PALETTE_YELLOW
-                                        : LV_PALETTE_RED)));
+              : (sensors_info.iaq < IAQ_AVERAGE_MAX ? LV_PALETTE_YELLOW
+                                                    : LV_PALETTE_RED)));
 }

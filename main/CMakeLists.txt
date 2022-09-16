@@ -13,9 +13,13 @@ idf_component_register(
     mainpanel.cpp
   INCLUDE_DIRS ".")
 
-target_compile_options(${COMPONENT_TARGET} PUBLIC
-  -DENV_HOSTNAME="$ENV{WC_HOSTNAME}"
-  -DENV_WIFI_SSID="$ENV{WC_WIFI_SSID}"
-  -DENV_WIFI_PASS="$ENV{WC_WIFI_PASS}")
-
+if (DEFINED ENV{WC_WIFI_SSID})
+  message(STATUS "Building for host ${WC_HOSTNAME}")
+  target_compile_options(${COMPONENT_TARGET} PUBLIC
+    -DENV_HOSTNAME="$ENV{WC_HOSTNAME}"
+    -DENV_WIFI_SSID="$ENV{WC_WIFI_SSID}"
+    -DENV_WIFI_PASS="$ENV{WC_WIFI_PASS}")
+else()
+  message(STATUS "Please define required env variables")
+endif()
 

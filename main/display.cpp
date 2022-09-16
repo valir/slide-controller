@@ -5,6 +5,7 @@
 #include <ILI9341_SPI.h>
 #include <XPT2046_Touchscreen.h>
 #include <lvgl/lvgl.h>
+#include <time.h>
 
 #include "hal/lv_hal_disp.h"
 #include "sensors.h"
@@ -179,9 +180,10 @@ void displayTask(void *) {
   // lv_label_set_text(label2, "Goodbye");
 
   lv_scr_load(lv_scr_act());
+  auto last_minute = ( time(0) % 3600 )/60;
 
   for (;;) {
-    if (lv_disp_get_inactive_time(NULL) < 1000 || sensors_info.temp_status == DHT_STATUS_INITIALIZING) {
+    if (( lv_disp_get_inactive_time(NULL) < 1000 ) || (sensors_info.status != SENSOR_STATUS_RUNNING)) {
       lv_task_handler();
     } else {
       // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));
@@ -193,7 +195,9 @@ void displayTask(void *) {
       if (notif_flags & DISPLAY_NOTIFY_TOUCH) {
         lv_task_handler();
       }
-      if (notif_flags & DISPLAY_UPDATE_WIDGETS) {
+      auto current_minute = ( time(0) % 3600 )/60;
+      if ( (notif_flags & DISPLAY_UPDATE_WIDGETS) && ( last_minute != current_minute ) ) {
+        last_minute = current_minute;
         status_bar.update();
         main_panel.update();
         lv_task_handler();
