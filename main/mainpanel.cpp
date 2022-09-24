@@ -96,7 +96,7 @@ void MainPanel::update()
   //     "%s camera: %4.1f °C %c \n %s ceruta: %4.1f °C %c", "#00ff00",
   //     sensors_info.temperature, '#', "#0000ff", 0., '#');
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]),
-      "%s camera: %4.1f °C %c", "#00ff00", sensors_info.temperature, '#');
+      "%s %s: %4.1f °C %c", "#00ff00", ENV_HOSTNAME, sensors_info.temperature, '#');
   lv_label_set_text(temp_label, txt_buffer);
 
   snprintf(txt_buffer, sizeof(txt_buffer) / sizeof(txt_buffer[0]), "%4.1f %%",

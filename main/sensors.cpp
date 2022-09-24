@@ -14,7 +14,6 @@
 
 #define PIN_NUM_SDI 26
 #define PIN_NUM_CLK 25
-#define PIN_NUM_CS 33
 #define I2C_MASTER_NUM 0
 #define I2C_ADDR 0x77 // BME680 address is hardcoded
 

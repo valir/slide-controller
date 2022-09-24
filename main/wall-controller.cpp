@@ -50,7 +50,13 @@ void beep_start(uint16_t ms) {
 extern "C" void app_main() {
 
   // initArduino();
-  nvs_flash_init();
+  auto err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND){
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    err = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(err);
+
   display_allocate_heap(); // allocate early so we get that large chunk of DMA-capable RAM
   beep_start(300);
   // auto err = esp_register_freertos_idle_hook_for_cpu(idle_hook, 0);

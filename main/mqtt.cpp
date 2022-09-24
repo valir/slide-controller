@@ -4,6 +4,8 @@
 #include <esp_err.h>
 #include <esp_event.h>
 #include <esp_log.h>
+#include <esp_partition.h>
+#include <esp_ota_ops.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/semphr.h>
@@ -19,6 +21,7 @@ static const char* TAG = "MQTT";
 #define MQTT_TOPIC_LIGHTS "cmd/" ENV_HOSTNAME "/lights"
 #define MQTT_TOPIC_POLL_NIGHT_MODE "state/barlog/night_mode"
 #define MQTT_TOPIC_CALIBRATE "cmd/" ENV_HOSTNAME "/calibrate"
+#define MQTT_TOPIC_OTA "cmd/" ENV_HOSTNAME "/ota"
 
 struct MqttSubscription {
   const char* TOPIC;
@@ -77,11 +80,19 @@ void handleCalibrate(const char* data, int data_len)
   }
 }
 
+void handleOtaCmd(const char* data, int data_len)
+{
+  if (strncasecmp(data, "start", data_len)) { }
+  if (strncasecmp(data, "status", data_len)) { }
+  if (strncasecmp(data, "reboot", data_len)) { }
+}
+
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 struct MqttSubscription mqttSubscriptions[]
     = { { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
         { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
         { .TOPIC = MQTT_TOPIC_CALIBRATE, .qos = 0, .func = handleCalibrate },
+        { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
         { .TOPIC = nullptr } };
 
 static const char* CONFIG_BROKER_URL = "mqtt://bb-master";
@@ -174,7 +185,23 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
   }
 }
 
-void heartbeat(void*) { events.postHeartbeatEvent(); }
+void heartbeat(void*)
+{
+  static bool just_started = true;
+  if (just_started) {
+    // if we got up following an OTA request, then validate this version
+    const esp_partition_t* running_part = esp_ota_get_running_partition();
+    esp_ota_img_states_t ota_state;
+    if (esp_ota_get_state_partition(running_part, &ota_state) == ESP_OK) {
+      if (esp_ota_mark_app_valid_cancel_rollback() == ESP_OK) {
+        ESP_LOGI(TAG, "Successfully cancelled OTA rollback");
+      } else {
+        ESP_LOGE(TAG, "Failed to cancel OTA rollback");
+      }
+    }
+  }
+  events.postHeartbeatEvent();
+}
 
 void mqttTask(void*)
 {
@@ -194,7 +221,6 @@ void mqttTask(void*)
   ESP_ERROR_CHECK(esp_timer_create(&heartbeat_timer_args, &heart_beat_timer));
   ESP_ERROR_CHECK(
       esp_timer_start_periodic(heart_beat_timer, 3 * 1000 * 1000ul));
-
 
   for (;;) {
     MqttEventInfo mqttEvent = events.waitNextEvent();

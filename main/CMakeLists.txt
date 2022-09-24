@@ -13,7 +13,7 @@ idf_component_register(
     mainpanel.cpp
   INCLUDE_DIRS ".")
 
-if (DEFINED ENV{WC_WIFI_SSID})
+if (DEFINED ENV{WC_WIFI_SSID} AND DEFINED ENV{WC_HOSTNAME})
   message(STATUS "Building for host ${WC_HOSTNAME}")
   target_compile_options(${COMPONENT_TARGET} PUBLIC
     -DENV_HOSTNAME="$ENV{WC_HOSTNAME}"
