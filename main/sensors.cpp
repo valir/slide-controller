@@ -133,7 +133,7 @@ void bme_delay_us(uint32_t period, void*)
 //   // using BSec library
 // }
 //
-// static void sensors_periodic_read(void*)
+// static void sensors_timer(void*)
 // {
 //   initiate_measurement();
 //   read_raw_sensors();
@@ -227,10 +227,18 @@ void bme680_init()
   }
 }
 
-static void sensors_periodic_read(void*)
+void heartbeat()
 {
-  if (!bsec2.run()) {
-    ESP_LOGE(TAG, "BME680 run method failed");
+	events.postHeartbeatEvent();
+}
+
+static void sensors_timer(void*)
+{
+  bsec2.run();
+
+  static uint8_t heartbeat_counter = 0;
+  if ((heartbeat_counter++ % 3) ==0 ) {
+    heartbeat();
   }
 }
 
@@ -257,13 +265,13 @@ void sensors_task(void*)
   // restore_sensors_state();
 
   ESP_LOGI(TAG, "Starting sensors periodic read");
-  esp_timer_create_args_t timer_args = { .callback = sensors_periodic_read,
+  esp_timer_create_args_t timer_args = { .callback = sensors_timer,
     .arg = nullptr,
     .dispatch_method = ESP_TIMER_TASK,
     .skip_unhandled_events = 1 };
   esp_timer_handle_t timer_handle;
   ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 5 * 1000 * 1000));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 1 * 1000 * 1000));
 
   ESP_LOGI(TAG, "Starting sensors state periodic backup");
   esp_timer_create_args_t backup_timer_args

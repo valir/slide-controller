@@ -11,6 +11,7 @@ idf_component_register(
     events.cpp
     statusbar.cpp
     mainpanel.cpp
+    ota.cpp
   INCLUDE_DIRS ".")
 
 if (DEFINED ENV{WC_WIFI_SSID} AND DEFINED ENV{WC_HOSTNAME})
@@ -18,7 +19,8 @@ if (DEFINED ENV{WC_WIFI_SSID} AND DEFINED ENV{WC_HOSTNAME})
   target_compile_options(${COMPONENT_TARGET} PUBLIC
     -DENV_HOSTNAME="$ENV{WC_HOSTNAME}"
     -DENV_WIFI_SSID="$ENV{WC_WIFI_SSID}"
-    -DENV_WIFI_PASS="$ENV{WC_WIFI_PASS}")
+    -DENV_WIFI_PASS="$ENV{WC_WIFI_PASS}"
+    -DENV_OTA_IP="$ENV{WC_OTA_IP}")
 else()
   message(STATUS "Please define required env variables")
 endif()

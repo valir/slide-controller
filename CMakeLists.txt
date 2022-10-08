@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(wall-controller)
+project(wall-controller-$ENV{WC_HOSTNAME})
 
 set(MINIGRAFX_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/lib/minigrafx)
 
