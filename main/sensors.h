@@ -9,12 +9,14 @@ enum  SensorsStatus{
 
 struct Sensors_Info {
   SensorsStatus status = SENSOR_STATUS_STARTING_UP;
-  float temperature =0.0;
-  float relative_humidity =0.0;
+  float temperature =0.;
+  float relative_humidity =0.;
+  float pressure =0.;
   float iaq = 0.;
   float cal_iaq = 0.;
   float cal_temperature = 0.;
   float cal_rel_humidity = 0.;
+  float cal_pressure = 0.;
 };
 
 extern Sensors_Info sensors_info;

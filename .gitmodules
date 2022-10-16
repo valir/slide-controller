@@ -31,3 +31,6 @@
 [submodule "components/Bosch-BME68x-Library"]
 	path = components/Bosch-BME68x-Library
 	url = git@github.com:valir/Bosch-BME68x-Library.git
+[submodule "components/Bosch-BME280-driver"]
+	path = components/Bosch-BME280-driver
+	url = git@github.com:valir/BME280_driver.git
