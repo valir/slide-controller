@@ -15,6 +15,10 @@ enum WallControllerEvent {
   EVENT_SENSOR_CO2,
   EVENT_SENSOR_VOC,
   EVENT_SENSOR_PRESSURE,
+#if ENV_EXT_SENSOR == 1
+  EVENT_SENSOR_EXT_TEMPERATURE,
+  EVENT_SENSOR_EXT_HUMIDITY
+#endif
 };
 
 enum WallControllerStatus {
@@ -44,12 +48,13 @@ public:
   void postHeartbeatEvent();
   void postAirTemperatureEvent(float);
   void postAirHumidityEvent(float);
-  void postGasStatusEvent(bool);
   void postIAQEvent(float);
   void postAirCO2Event(float);
   void postAirVOCEvent(float);
   void postAirPressureEvent(float);
   void postTouchedEvent();
+  void postExtTemperatureEvent(float);
+  void postExtHumidityEvent(float);
   MqttEventInfo waitNextEvent();
 
 private:

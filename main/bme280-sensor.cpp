@@ -81,7 +81,7 @@ void bme280Sensor::sensors_timer()
   events.postAirPressureEvent(sensors_info.pressure/100);
   xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
 
-  // initiated next measurement
+  // initiate next measurement
   _res = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
   if (_res < 0) {
     ESP_LOGE(TAG, "_set_sensor_mode status %d", _res);

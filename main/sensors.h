@@ -17,6 +17,14 @@ struct Sensors_Info {
   float cal_temperature = 0.;
   float cal_rel_humidity = 0.;
   float cal_pressure = 0.;
+#ifdef ENV_EXT_SENSOR
+  float ext_temperature = 0.;
+  float ext_humidity = 0.;
+  float cal_ext_temperature = 0.;
+  float cal_ext_humidity = 0.;
+  void set_ext_temperature(float t) { ext_temperature = t + cal_ext_temperature; }
+  void set_ext_humidity(float h) { ext_humidity = h + cal_ext_humidity; }
+#endif
 };
 
 extern Sensors_Info sensors_info;

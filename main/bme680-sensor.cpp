@@ -62,7 +62,7 @@ void bme680Sensor::sensors_data_callback(
       ESP_LOGI(TAG, "BSec: run in status %.1f", bsdata.signal);
       sensors_info.status = bsdata.signal == 1.0 ? SENSOR_STATUS_RUNNING
                                                  : SENSOR_STATUS_STABILIZING;
-      events.postGasStatusEvent(bsdata.signal == 1.0 ? true : false);
+      // events.postGasStatusEvent(bsdata.signal == 1.0 ? true : false);
       break;
     case BSEC_OUTPUT_IAQ:
       ESP_LOGI(TAG, "BSec: IAQ %.2f", bsdata.signal);

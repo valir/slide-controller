@@ -26,36 +26,78 @@ void Events::postTouchedEvent()
   postEvent(Event { .event = EVENT_SCREEN_TOUCHED });
 }
 
-void Events::postHeartbeatEvent() { postEvent ( { .event = EVENT_HEARTBEAT } ); }
+void Events::postHeartbeatEvent() { postEvent({ .event = EVENT_HEARTBEAT }); }
 void Events::postAirTemperatureEvent(float x)
 {
-  postEvent(
-      Event { .event = EVENT_SENSOR_TEMPERATURE, .air_temperature = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(
+        Event { .event = EVENT_SENSOR_TEMPERATURE, .air_temperature = x });
+    last_x = x;
+  }
 }
 void Events::postAirHumidityEvent(float x)
 {
-  postEvent(Event { .event = EVENT_SENSOR_HUMIDITY, .air_humidity = x });
-}
-void Events::postGasStatusEvent(bool x)
-{
-  postEvent(Event { .event = EVENT_SENSOR_GAS_STATUS, .gas_status = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event { .event = EVENT_SENSOR_HUMIDITY, .air_humidity = x });
+    last_x = x;
+  }
 }
 void Events::postIAQEvent(float x)
 {
-  postEvent(Event { .event = EVENT_SENSOR_IAQ, .air_iaq = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event { .event = EVENT_SENSOR_IAQ, .air_iaq = x });
+    last_x = x;
+  }
 }
 void Events::postAirCO2Event(float x)
 {
-  postEvent(Event { .event = EVENT_SENSOR_CO2, .air_co2 = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event { .event = EVENT_SENSOR_CO2, .air_co2 = x });
+    last_x = x;
+  }
 }
 void Events::postAirVOCEvent(float x)
 {
-  postEvent(Event { .event = EVENT_SENSOR_VOC, .air_voc = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event { .event = EVENT_SENSOR_VOC, .air_voc = x });
+    last_x = x;
+  }
 }
 void Events::postAirPressureEvent(float x)
 {
-  postEvent(Event { .event = EVENT_SENSOR_PRESSURE, .air_pressure = x });
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event { .event = EVENT_SENSOR_PRESSURE, .air_pressure = x });
+    last_x = x;
+  }
 }
+
+#if ENV_EXT_SENSOR == 1
+void Events::postExtTemperatureEvent(float x)
+{
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(Event {
+        .event = EVENT_SENSOR_EXT_TEMPERATURE, .air_temperature = x });
+    last_x = x;
+  }
+}
+
+void Events::postExtHumidityEvent(float x)
+{
+  static float last_x = 0.;
+  if (x != last_x) {
+    postEvent(
+        Event { .event = EVENT_SENSOR_EXT_HUMIDITY, .air_humidity = x });
+    last_x = x;
+  }
+}
+#endif
 
 void Events::postEvent(Event&& theEvent)
 {
@@ -109,6 +151,16 @@ MqttEventInfo Events::waitNextEvent()
     mqttEvent.name = "air_pressure";
     snprintf(data, DATA_BUSIZE, "%.0f", event.air_pressure);
     break;
+#if ENV_EXT_SENSOR == 1
+  case EVENT_SENSOR_EXT_TEMPERATURE:
+    mqttEvent.name = "ext_temperature";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
+    break;
+  case EVENT_SENSOR_EXT_HUMIDITY:
+    mqttEvent.name = "ext_humidity";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
+    break;
+#endif
   default:
     ESP_LOGE(TAG, "Unknown event type %d", event.event);
   }

@@ -95,7 +95,7 @@ void rs485_task(void*) {
   auto curr_conf_reg = *uart_rs485_conf_reg;
   *uart_rs485_conf_reg = ( curr_conf_reg | 0x10 ) & ( ~0x08 );
   ESP_ERROR_CHECK(uart_set_rx_timeout(uart_num, READ_TIMEOUT));
-  uint8_t* data = (uint8_t*) malloc(BUF_SIZE);
+  // uint8_t* data = (uint8_t*) malloc(BUF_SIZE);
   ESP_LOGI(TAG, "UART start receive loop.\r\n");
 
   for (;;) {

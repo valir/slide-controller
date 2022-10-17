@@ -5,6 +5,7 @@ idf_component_register(
     rs485.cpp
     display.cpp
     touch.cpp
+    backlight.cpp
     wifi.cpp
     # modbus.cpp
     mqtt.cpp
@@ -24,6 +25,7 @@ if (DEFINED ENV{WC_WIFI_SSID} AND DEFINED ENV{WC_HOSTNAME})
     -DENV_WIFI_PASS="$ENV{WC_WIFI_PASS}"
     -DENV_OTA_IP="$ENV{WC_OTA_IP}"
     -DENV_SENSOR_TYPE=$ENV{WC_SENSOR_TYPE}
+    -DENV_EXT_SENSOR=$ENV{WC_EXT_SENSOR}
     )
 else()
   message(STATUS "Please define required env variables")

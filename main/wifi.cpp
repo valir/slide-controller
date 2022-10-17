@@ -69,7 +69,7 @@ void mqttTask(void*);
 
 void wifiTask(void*)
 {
-  vTaskDelay(pdMS_TO_TICKS(5000));
+  vTaskDelay(pdMS_TO_TICKS(1000));
   WifiTaskState state = WIFI_STATE_STARTING;
   for (;;) {
     switch (state) {

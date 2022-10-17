@@ -12,6 +12,11 @@
 #include "events.h"
 #include "sensors.h"
 
+#if (ENV_EXT_SENSOR == 1)
+#include <esp32DHT.h>
+#define PIN_NUM_DHT GPIO_NUM_32
+#endif
+
 #define PIN_NUM_SDI 26
 #define PIN_NUM_CLK 25
 #define I2C_MASTER_NUM 0
@@ -25,11 +30,56 @@ Sensors_Info sensors_info;
 
 void heartbeat() { events.postHeartbeatEvent(); }
 
-template <class S> class sensor_wrapper {
+#if ENV_EXT_SENSOR == 1
+class ext_sensor_wrapper {
+  static DHT22 _ext_sensor;
+
+  public:
+  ext_sensor_wrapper()
+  {
+    _ext_sensor.setup(PIN_NUM_DHT);
+    _ext_sensor.onData(ext_sensor_data);
+    _ext_sensor.onError(ext_sensor_err);
+  }
+  static void sensors_timer()
+  {
+    static uint8_t counter = 0;
+    constexpr uint8_t DHT_FREQUENCY = 16;
+    if ((counter++ % DHT_FREQUENCY) == 0)
+      _ext_sensor.read();
+  }
+
+  protected:
+  static void ext_sensor_data(float h, float t)
+  {
+    sensors_info.set_ext_temperature(t);
+    sensors_info.set_ext_humidity(h);
+    events.postExtTemperatureEvent(sensors_info.ext_temperature);
+    events.postExtHumidityEvent(sensors_info.ext_humidity);
+  }
+  static void ext_sensor_err(uint8_t err)
+  {
+    ESP_LOGE(TAG, "ext_sensor_err %d", err);
+  }
+};
+DHT22 ext_sensor_wrapper::_ext_sensor;
+
+#else  // ENV_EXT_SENSOR
+class ext_sensor_wrapper {
+  protected:
+  static void sensors_timer() { }
+};
+#endif // ENV_EXT_SENSOR
+
+template <class S, class E> class sensor_wrapper : public E {
   static S _sensor;
 
   public:
-  sensor_wrapper() { _sensor.init(); }
+  sensor_wrapper()
+      : E()
+  {
+    _sensor.init();
+  }
   static void sensors_timer(void*)
   {
     static uint8_t heartbeat_counter = 0;
@@ -40,8 +90,8 @@ template <class S> class sensor_wrapper {
     static bool measuring = false;
 
     if (measuring) {
-      // bsec2.setTemperatureOffset(sensors_info.cal_temperature);
       _sensor.sensors_timer();
+      E::sensors_timer();
     } else {
       // activate measuring only after 10 heartbeats have been sent
       // so homeassistant get a change to send calibration data first
@@ -50,7 +100,7 @@ template <class S> class sensor_wrapper {
   }
 };
 
-template <class S> S sensor_wrapper<S>::_sensor;
+template <class S, class E> S sensor_wrapper<S, E>::_sensor;
 
 void sensors_task(void*)
 {
@@ -69,7 +119,7 @@ void sensors_task(void*)
   ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_NUM, &i2c_conf));
   ESP_ERROR_CHECK(i2c_driver_install(I2C_MASTER_NUM, i2c_conf.mode, 0, 0, 0));
 
-  sensor_wrapper< ENV_SENSOR_TYPE > sensor;
+  sensor_wrapper<ENV_SENSOR_TYPE, ext_sensor_wrapper> sensor;
 
   // retrieve any previously saved state from MQTT before proceeding
   // restore_sensors_state();

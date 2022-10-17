@@ -4,6 +4,7 @@
 
 #include "mainpanel.h"
 #include "sensors.h"
+#include "backlight.h"
 
 static lv_obj_t* init_spinner = nullptr;
 static lv_obj_t* temp_meter = nullptr;
@@ -87,6 +88,9 @@ void MainPanel::update()
     lv_obj_clear_flag(rh_label, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(co2_meter, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(co2_label, LV_OBJ_FLAG_HIDDEN);
+
+    // trigger delayed backlight turn-off so device won't heat-up
+    BackLight::activateTimer();
   }
 
   lv_meter_set_indicator_end_value(
