@@ -1,7 +1,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_log.h>
-#include "bme680-sensor.h"
+#include "bme680Sensor.h"
 #include "sensors.h"
 #include "events.h"
 #include <display.h>
@@ -118,4 +118,8 @@ void bme680Sensor::init()
           sensor_list, sizeof(sensor_list) / sizeof(sensor_list[0]))) {
     ESP_LOGE(TAG, "Cannot bsec2.updateSubscription");
   }
+}
+
+void bme680Sensor::sensors_timer() {
+  bsec2.run();
 }

@@ -6,8 +6,7 @@
 #include <freertos/task.h>
 #include <string.h>
 
-#include "bme280-sensor.h"
-#include "bme680-sensor.h"
+#include ENV_SENSOR_INCLUDE
 #include "display.h"
 #include "events.h"
 #include "sensors.h"

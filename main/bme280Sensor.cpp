@@ -1,4 +1,4 @@
-#include "bme280-sensor.h"
+#include "bme280Sensor.h"
 #include <bme280.h>
 #include <algorithm>
 #include "sensors.h"
