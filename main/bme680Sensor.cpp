@@ -11,26 +11,7 @@
 #define I2C_ADDR 0x77 // BME680 address is hardcoded
 
 static const char *TAG = "BME680";
-
-// static BME68X_INTF_RET_TYPE bme_i2c_read(
-//     uint8_t reg_adr, uint8_t* reg_data, uint32_t length, void*)
-// {
-//   esp_err_t res = i2c_master_write_read_device(I2C_MASTER_NUM, I2C_ADDR,
-//       &reg_adr, 1, reg_data, length, pdMS_TO_TICKS(1000));
-//   return (res == ESP_OK) ? BME68X_OK : BME68X_E_COM_FAIL;
-// }
-//
-// static BME68X_INTF_RET_TYPE bme_i2c_write(
-//     uint8_t reg_adr, const uint8_t* reg_data, uint32_t length, void*)
-// {
-//   const uint32_t DATA_LEN = length + 1;
-//   uint8_t data[DATA_LEN];
-//   data[0] = reg_adr;
-//   memcpy(&data[1], reg_data, length);
-//   esp_err_t res = i2c_master_write_to_device(
-//       I2C_MASTER_NUM, I2C_ADDR, data, DATA_LEN, pdMS_TO_TICKS(1000));
-//   return (res == ESP_OK) ? BME68X_OK : BME68X_E_COM_FAIL;
-// }
+static bool sensor_init_ok = false;
 
 void bme680Sensor::sensors_state_backup(void*)
 {
@@ -103,6 +84,7 @@ void bme680Sensor::init()
   if (!bsec2.begin(BME68X_I2C_INTF, i2c_read, i2c_write, delay_us,
           nullptr)) {
     ESP_LOGE(TAG, "Cannot bsec2.begin");
+    return;
   }
   bsecSensor sensor_list[] = {
     BSEC_OUTPUT_STABILIZATION_STATUS,
@@ -117,9 +99,13 @@ void bme680Sensor::init()
   if (!bsec2.updateSubscription(
           sensor_list, sizeof(sensor_list) / sizeof(sensor_list[0]))) {
     ESP_LOGE(TAG, "Cannot bsec2.updateSubscription");
+    return;
   }
+  sensor_init_ok = true;
 }
 
 void bme680Sensor::sensors_timer() {
-  bsec2.run();
+  if (sensor_init_ok) {
+    bsec2.run();
+  }
 }

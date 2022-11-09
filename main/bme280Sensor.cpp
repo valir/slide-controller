@@ -16,6 +16,7 @@ static const char* TAG = "BME280";
 uint8_t dev_addr = BME280_I2C_ADDR_PRIM;
 struct bme280_data comp_data;
 struct bme280_dev dev;
+bool sensor_init_ok = false;
 
 void bme280Sensor::init()
 {
@@ -28,6 +29,7 @@ void bme280Sensor::init()
   _res = bme280_init(&dev);
   if (_res < 0) {
     ESP_LOGE(TAG, "_init error %d, halting", _res);
+    return;
   }
 
   /* Recommended mode of operation: Indoor navigation */

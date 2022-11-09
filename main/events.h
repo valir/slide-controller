@@ -17,8 +17,11 @@ enum WallControllerEvent {
   EVENT_SENSOR_PRESSURE,
 #if ENV_EXT_SENSOR == 1
   EVENT_SENSOR_EXT_TEMPERATURE,
-  EVENT_SENSOR_EXT_HUMIDITY
+  EVENT_SENSOR_EXT_HUMIDITY,
 #endif
+  EVENT_OTA_STARTED,
+  EVENT_OTA_DONE_OK,
+  EVENT_OTA_DONE_FAIL
 };
 
 enum WallControllerStatus {
@@ -55,6 +58,9 @@ public:
   void postTouchedEvent();
   void postExtTemperatureEvent(float);
   void postExtHumidityEvent(float);
+  void postOtaStarted();
+  void postOtaDoneOk();
+  void postOtaDoneFail();
   MqttEventInfo waitNextEvent();
 
 private:

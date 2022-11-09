@@ -20,6 +20,21 @@ Events::Events()
 
 Events::~Events() { vQueueDelete(event_queue); }
 
+template <typename T>
+struct ReduceEventsFrequency {
+  T last_x;
+  uint8_t count =0;
+  ReduceEventsFrequency(T zero =0) : last_x(zero) {}
+  bool skipEvent(T x) {
+    if (last_x !=x || count++ >6) {
+      count = 0;
+      last_x = x;
+      return false;
+    }
+    return true;
+  }
+};
+
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 void Events::postTouchedEvent()
 {
@@ -29,75 +44,77 @@ void Events::postTouchedEvent()
 void Events::postHeartbeatEvent() { postEvent({ .event = EVENT_HEARTBEAT }); }
 void Events::postAirTemperatureEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(
         Event { .event = EVENT_SENSOR_TEMPERATURE, .air_temperature = x });
-    last_x = x;
   }
 }
 void Events::postAirHumidityEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event { .event = EVENT_SENSOR_HUMIDITY, .air_humidity = x });
-    last_x = x;
   }
 }
 void Events::postIAQEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event { .event = EVENT_SENSOR_IAQ, .air_iaq = x });
-    last_x = x;
   }
 }
 void Events::postAirCO2Event(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event { .event = EVENT_SENSOR_CO2, .air_co2 = x });
-    last_x = x;
   }
 }
 void Events::postAirVOCEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event { .event = EVENT_SENSOR_VOC, .air_voc = x });
-    last_x = x;
   }
 }
 void Events::postAirPressureEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event { .event = EVENT_SENSOR_PRESSURE, .air_pressure = x });
-    last_x = x;
   }
 }
 
 #if ENV_EXT_SENSOR == 1
 void Events::postExtTemperatureEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(Event {
         .event = EVENT_SENSOR_EXT_TEMPERATURE, .air_temperature = x });
-    last_x = x;
   }
 }
 
 void Events::postExtHumidityEvent(float x)
 {
-  static float last_x = 0.;
-  if (x != last_x) {
+  static ReduceEventsFrequency< float > r;
+  if (!r.skipEvent(x)) {
     postEvent(
         Event { .event = EVENT_SENSOR_EXT_HUMIDITY, .air_humidity = x });
-    last_x = x;
   }
 }
 #endif
+
+void Events::postOtaStarted() {
+  postEvent(Event{ .event = EVENT_OTA_STARTED});
+}
+void Events::postOtaDoneOk() {
+  postEvent(Event{ .event = EVENT_OTA_DONE_OK});
+}
+void Events::postOtaDoneFail() {
+  postEvent(Event{ .event = EVENT_OTA_DONE_FAIL});
+}
 
 void Events::postEvent(Event&& theEvent)
 {
@@ -161,6 +178,18 @@ MqttEventInfo Events::waitNextEvent()
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
     break;
 #endif
+  case EVENT_OTA_STARTED:
+    mqttEvent.name = "ota";
+    strcpy(data, "start");
+    break;
+  case EVENT_OTA_DONE_OK:
+    mqttEvent.name = "ota";
+    strcpy(data, "OK");
+    break;
+  case EVENT_OTA_DONE_FAIL:
+    mqttEvent.name = "ota";
+    strcpy(data, "FAIL");
+    break;
   default:
     ESP_LOGE(TAG, "Unknown event type %d", event.event);
   }

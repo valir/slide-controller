@@ -83,16 +83,19 @@ void MainPanel::update()
     lv_obj_del(init_spinner);
     init_spinner = nullptr;
 
+#ifndef ENV_NO_SENSOR
     lv_obj_clear_flag(temp_meter, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(rh_meter, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(rh_label, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(co2_meter, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(co2_label, LV_OBJ_FLAG_HIDDEN);
+#endif
 
     // trigger delayed backlight turn-off so device won't heat-up
     BackLight::activateTimer();
   }
 
+#ifndef ENV_NO_SENSOR
   lv_meter_set_indicator_end_value(
       temp_meter, temp_actual, sensors_info.temperature);
   static char txt_buffer[128];
@@ -123,4 +126,5 @@ void MainPanel::update()
               ? LV_PALETTE_GREEN
               : (sensors_info.iaq < IAQ_AVERAGE_MAX ? LV_PALETTE_YELLOW
                                                     : LV_PALETTE_RED)));
+#endif
 }

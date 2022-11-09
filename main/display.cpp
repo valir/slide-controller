@@ -121,8 +121,6 @@ void displayTask(void*)
     .dispatch_method = ESP_TIMER_TASK,
     .name = "lvgl_tick",
     .skip_unhandled_events = true };
-  timer_args.callback = lv_tick_task;
-  timer_args.name = "gui_timer";
   ESP_ERROR_CHECK(esp_timer_create(&timer_args, &lvgl_tick_timer));
   ESP_ERROR_CHECK(
       esp_timer_start_periodic(lvgl_tick_timer, LV_TICK_PERIOD_MS * 1000));
@@ -188,7 +186,12 @@ void displayTask(void*)
 
   for (;;) {
     if ((lv_disp_get_inactive_time(NULL) < 1000)
-        || (sensors_info.status != SENSOR_STATUS_RUNNING)) {
+#ifndef ENV_NO_SENSOR
+        || (sensors_info.status != SENSOR_STATUS_RUNNING)
+#else
+        || true
+#endif
+        ) {
       lv_task_handler();
     } else {
       // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));
