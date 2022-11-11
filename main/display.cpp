@@ -81,22 +81,6 @@ void create_temp_display() { }
 
 lv_obj_t* aqi = NULL;
 
-void create_aqi_display()
-{
-  aqi = lv_meter_create(lv_scr_act());
-  auto scale = lv_meter_add_scale(aqi);
-  lv_meter_set_scale_ticks(aqi, scale, 40, 1, 0, lv_color_black());
-  lv_meter_set_scale_major_ticks(aqi, scale, 10, 3, 0, lv_color_black(), 0);
-  lv_meter_indicator_t* aqi_indic = NULL;
-  aqi_indic
-      = lv_meter_add_needle_line(aqi, scale, 1, lv_color_make(255, 0, 0), 0);
-  lv_obj_set_size(aqi, 150, 150);
-  lv_obj_set_pos(aqi, 100, 100);
-  // lv_object_set_style_local_image_recolor_opa(aqi, LV_GAUGE_PART_NEEDLE,
-  // LV_STATE_DEFAULT, LV_OPA_COVER);
-  lv_meter_set_indicator_value(aqi, aqi_indic, 30);
-}
-
 void setDisplayBacklight(bool on)
 {
 }

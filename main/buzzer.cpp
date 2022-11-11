@@ -29,13 +29,15 @@ void Buzzer::doorbell()
   tone(NOTE_E, 6, 1000);
 }
 
-esp_timer_handle_t alertTimerHandle = NULL;
+esp_timer_handle_t alertTimerHandle = nullptr;
 
 void alertTimer(void* pThis) {
   reinterpret_cast<Buzzer*>(pThis)->tone(NOTE_A, 7, 1000);
 }
 
 void Buzzer::startAlert() {
+  if (alertTimerHandle != nullptr)
+    return; // we are already emmitting alerts
   alertTimer(reinterpret_cast<void*>(this)); // initial sound, immediately
   esp_timer_create_args_t timer_args = { .callback = alertTimer,
     .arg = reinterpret_cast<void*>(this),
@@ -50,6 +52,7 @@ void Buzzer::startAlert() {
 void Buzzer::stopAlert() {
   esp_timer_stop(alertTimerHandle);
   esp_timer_delete(alertTimerHandle);
+  alertTimerHandle = nullptr;
 }
 
 void Buzzer::ackTone()

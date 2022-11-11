@@ -43,7 +43,6 @@ extern "C" void app_main() {
 
   display_allocate_heap(); // allocate early so we get that large chunk of DMA-capable RAM
   buzzer.playStartup();
-  buzzer.tone(NOTE_A, 6, 100);
   // auto err = esp_register_freertos_idle_hook_for_cpu(idle_hook, 0);
   // if (ESP_OK != err) {
   //   printf("Error registering idle hook %d", err);

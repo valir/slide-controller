@@ -1,16 +1,15 @@
+#include "bme680Sensor.h"
+#include "events.h"
+#include "sensors.h"
+#include <display.h>
+#include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <esp_log.h>
-#include "bme680Sensor.h"
-#include "sensors.h"
-#include "events.h"
-#include <display.h>
-
 
 #define I2C_MASTER_NUM 0
 #define I2C_ADDR 0x77 // BME680 address is hardcoded
 
-static const char *TAG = "BME680";
+static const char* TAG = "BME680";
 static bool sensor_init_ok = false;
 
 void bme680Sensor::sensors_state_backup(void*)
@@ -81,8 +80,7 @@ void bme680Sensor::sensors_data_callback(
 void bme680Sensor::init()
 {
   bsec2.attachCallback(sensors_data_callback);
-  if (!bsec2.begin(BME68X_I2C_INTF, i2c_read, i2c_write, delay_us,
-          nullptr)) {
+  if (!bsec2.begin(BME68X_I2C_INTF, i2c_read, i2c_write, delay_us, nullptr)) {
     ESP_LOGE(TAG, "Cannot bsec2.begin");
     return;
   }
@@ -104,7 +102,8 @@ void bme680Sensor::init()
   sensor_init_ok = true;
 }
 
-void bme680Sensor::sensors_timer() {
+void bme680Sensor::sensors_timer()
+{
   if (sensor_init_ok) {
     bsec2.run();
   }
