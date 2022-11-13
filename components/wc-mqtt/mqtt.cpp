@@ -19,6 +19,7 @@
 #include "sensors.h"
 
 
+
 #include <events.h>
 
 extern TaskHandle_t otaTaskHandle;
@@ -26,12 +27,12 @@ void otaTask(void*);
 
 static const char* TAG = "MQTT";
 #define MQTT_TOPIC_NIGHT_MODE "cmd/barlog/night_mode"
-#define MQTT_TOPIC_LIGHTS "cmd/" ENV_HOSTNAME "/lights"
+#define MQTT_TOPIC_LIGHTS "cmd/" CONFIG_HOSTNAME "/lights"
 #define MQTT_TOPIC_POLL_NIGHT_MODE "state/barlog/night_mode"
-#define MQTT_TOPIC_CALIBRATE "cmd/" ENV_HOSTNAME "/calibrate"
-#define MQTT_TOPIC_EXT_CALIBRATE "cmd/" ENV_HOSTNAME "/ext_calibrate"
-#define MQTT_TOPIC_OTA "cmd/" ENV_HOSTNAME "/ota"
-#define MQTT_TOPIC_SOUND "cmd/" ENV_HOSTNAME "/sound"
+#define MQTT_TOPIC_CALIBRATE "cmd/" CONFIG_HOSTNAME "/calibrate"
+#define MQTT_TOPIC_EXT_CALIBRATE "cmd/" CONFIG_HOSTNAME "/ext_calibrate"
+#define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
+#define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
 
 struct MqttSubscription {
   const char* TOPIC;
@@ -92,6 +93,7 @@ void handleCalibrate(const char* data, int data_len)
 }
 #endif // ENV_NO_SENSOR
 
+#if CONFIG_HAS_EXTERNAL_SENSOR
 void handleExtCalibrate(const char* data, int data_len)
 {
   if (data == nullptr || data_len < 3) {
@@ -108,6 +110,7 @@ void handleExtCalibrate(const char* data, int data_len)
     buzzer.ackTone();
   }
 }
+#endif
 
 void handleOtaCmd(const char* data, int data_len)
 {
@@ -148,12 +151,7 @@ struct MqttSubscription mqttSubscriptions[] = {
 };
 
 static const char* CONFIG_BROKER_URL = "mqtt://bb-master";
-#ifdef ENV_HOSTNAME
-#define WALL_CONTROLLER_NAME ENV_HOSTNAME
-#else
-#error Please define ENV_HOSTNAME
-#endif
-#define MQTT_PREFIX "barlog/" WALL_CONTROLLER_NAME
+#define MQTT_PREFIX "barlog/" CONFIG_HOSTNAME
 
 static void log_error_if_nonzero(const char* message, int error_code)
 {

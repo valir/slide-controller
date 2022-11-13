@@ -76,7 +76,7 @@ void otaTask(void*)
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
   esp_http_client_config_t http_config
-      = { .url = "http://" ENV_OTA_IP "/wc_ota/image-" ENV_HOSTNAME ".bin",
+      = { .url = "http://" CONFIG_OTA_IP "/wc_ota/image-" CONFIG_HOSTNAME ".bin",
           .event_handler = http_event_handler };
   esp_http_client_handle_t http_client = esp_http_client_init(&http_config);
   ESP_ERROR_CHECK(esp_http_client_perform(http_client));

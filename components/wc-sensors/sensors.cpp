@@ -6,8 +6,8 @@
 #include <freertos/task.h>
 #include <string.h>
 
-#include ENV_SENSOR_INCLUDE
-#include "display.h"
+#include <internal-sensor.h>
+
 #include "events.h"
 #include "sensors.h"
 
@@ -118,7 +118,7 @@ void sensors_task(void*)
   ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_NUM, &i2c_conf));
   ESP_ERROR_CHECK(i2c_driver_install(I2C_MASTER_NUM, i2c_conf.mode, 0, 0, 0));
 
-  sensor_wrapper<ENV_SENSOR_TYPE, ext_sensor_wrapper> sensor;
+  sensor_wrapper<BME_SENSOR_TYPE, ext_sensor_wrapper> sensor;
 
   // retrieve any previously saved state from MQTT before proceeding
   // restore_sensors_state();

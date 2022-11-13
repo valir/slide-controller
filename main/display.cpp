@@ -36,6 +36,10 @@ static void lv_tick_task(void*) { lv_tick_inc(LV_TICK_PERIOD_MS); }
 
 lv_color_t* buf1 = nullptr;
 
+void display_events_observer() {
+  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
+}
+
 void display_allocate_heap()
 {
   heap_caps_print_heap_info(MALLOC_CAP_DMA);

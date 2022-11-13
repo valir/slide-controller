@@ -7,20 +7,10 @@
 #include <WiFi.h>
 #include <simpleDSTadjust.h>
 
-#ifndef ENV_WIFI_SSID
-#error Please define ENV_WIFI_SSID
-#endif
-#ifndef ENV_WIFI_PASS
-#error Please define ENV_WIFI_PASS
-#endif
-#ifndef ENV_HOSTNAME
-#error Please define ENV_HOSTNAME
-#endif
-
 static const char* TAG = "WIFI";
-static const char* WIFI_SSID = ENV_WIFI_SSID;
-static const char* WIFI_PASS = ENV_WIFI_PASS;
-static const char* WIFI_HOSTNAME = ENV_HOSTNAME;
+static const char* WIFI_SSID = CONFIG_WIFI_SSID;
+static const char* WIFI_PASS = CONFIG_WIFI_PASS;
+static const char* WIFI_HOSTNAME = CONFIG_HOSTNAME;
 
 void connectWifi()
 {

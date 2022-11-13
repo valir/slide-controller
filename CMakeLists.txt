@@ -2,8 +2,9 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.5)
 
-include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(wall-controller-$ENV{WC_HOSTNAME})
+set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
 
-set(MINIGRAFX_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/lib/minigrafx)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+project(wall-controller)
 

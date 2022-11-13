@@ -1,10 +1,10 @@
-#include "bme680Sensor.h"
-#include "events.h"
-#include "sensors.h"
-#include <display.h>
-#include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_log.h>
+#include "bme680Sensor.h"
+#include "sensors.h"
+#include "events.h"
+
 
 #define I2C_MASTER_NUM 0
 #define I2C_ADDR 0x77 // BME680 address is hardcoded
@@ -74,7 +74,6 @@ void bme680Sensor::sensors_data_callback(
       break;
     }
   }
-  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
 }
 
 void bme680Sensor::init()

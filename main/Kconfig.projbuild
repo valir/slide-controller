@@ -1,0 +1,40 @@
+
+menu "Wall Controller configuration"
+
+config HOSTNAME
+  string "Host Name"
+  default "test"
+
+config WIFI_SSID
+  string "WiFi SSID"
+
+config WIFI_PASS
+  string "WiFi Password"
+
+config OTA_IP
+  string "OTA server IP address"
+  default ""
+
+config HAS_INTERNAL_SENSOR
+  bool "Has internal sensor"
+  default n
+
+config HAS_EXTERNAL_SENSOR
+  bool "Has external sensor"
+  default n
+
+choice
+  prompt "Internal Sensor Type"
+  default USE_SENSOR_BME680
+  depends on HAS_INTERNAL_SENSOR
+
+  config USE_SENSOR_BME680
+    bool "BME680 Sensor"
+
+  config USE_SENSOR_BME280
+    bool "BME280 Sensor"
+
+endchoice
+
+endmenu
+
