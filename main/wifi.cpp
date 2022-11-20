@@ -2,6 +2,7 @@
 #include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <stdlib.h>
 #include <WiFi.h>
 #include <esp_log.h>
 #include <esp_ota_ops.h>
@@ -49,9 +50,8 @@ enum WifiTaskState {
   WIFI_STATE_RECONNECTING
 };
 
-#define NTP_SERVERS "cerberus.rusu.info"
 struct dstRule startRule = { "EEST", Last, Sun, Mar, 2, 3600 };
-struct dstRule endRule = { "EEST", Last, Sun, Oct, 2, 0 };
+struct dstRule endRule = { "EET", Last, Sun, Oct, 2, 0 };
 simpleDSTadjust dstAdjusted(startRule, endRule);
 
 TaskHandle_t mqttTaskHandle = NULL;
@@ -61,6 +61,8 @@ void eventsTask(void*);
 
 void wifiTask(void*)
 {
+  // setenv("TZ", "EET", 1);
+  // tzset();
   vTaskDelay(pdMS_TO_TICKS(1000));
   WifiTaskState state = WIFI_STATE_STARTING;
   for (;;) {
@@ -69,20 +71,16 @@ void wifiTask(void*)
       connectWifi();
       if (WiFi.status() == WL_CONNECTED) {
         ESP_LOGI(TAG, "Updating time...");
-        configTime(2 * 3600, 0, NTP_SERVERS);
+        configTime(2 * 3600, 0, CONFIG_NTP_SERVER);
         while (!time(nullptr))
           vTaskDelay(pdMS_TO_TICKS(100));
-        char* dstAbbrev;
-        time_t now = dstAdjusted.time(&dstAbbrev);
-        ESP_LOGI(TAG, "got time: %s", ctime(&now));
         state = WIFI_STATE_UPDATE_DATA;
       } else {
         state = WIFI_STATE_RECONNECTING;
       }
     } break;
     case WIFI_STATE_UPDATE_DATA: {
-      char* dstAbbrev;
-      time_t now = dstAdjusted.time(&dstAbbrev);
+      time_t now = dstAdjusted.time(nullptr);
       ESP_LOGI(TAG, "got time: %s", ctime(&now));
       state = WIFI_STATE_RUNNING;
     } break;

@@ -2,6 +2,7 @@
 #define _EVENTS_H_INCLUDED_
 
 #include <esp_event.h>
+#include <lvgl.h>
 
 enum WallControllerEvent {
   EVENT_STATUS_UPDATE,
@@ -39,6 +40,7 @@ struct Event {
     float air_co2;
     float air_voc;      //
     float air_pressure; // hPa
+    lv_point_t point;
   };
 };
 
@@ -58,7 +60,7 @@ class Events {
   void postAirCO2Event(float);
   void postAirVOCEvent(float);
   void postAirPressureEvent(float);
-  void postTouchedEvent();
+  void postTouchedEvent(lv_point_t);
   void postExtTemperatureEvent(float);
   void postExtHumidityEvent(float);
   void postOtaStarted();

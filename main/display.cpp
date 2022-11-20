@@ -1,9 +1,9 @@
 
 
-#include <esp_task_wdt.h>
 #include <ILI9341_SPI.h>
 #include <XPT2046_Touchscreen.h>
 #include <esp_heap_caps.h>
+#include <esp_task_wdt.h>
 #include <lvgl/lvgl.h>
 #include <time.h>
 
@@ -13,10 +13,9 @@
 #ifndef CONFIG_HAS_NO_SENSOR
 #include "sensors.h"
 #endif
-#include "statusbar.h"
 #include "backlight.h"
 #include "events.h"
-
+#include "statusbar.h"
 
 // Pins for the ILI9341 and ESP32
 #define LCD_DC 4
@@ -39,9 +38,32 @@ static void lv_tick_task(void*) { lv_tick_inc(LV_TICK_PERIOD_MS); }
 
 lv_color_t* buf1 = nullptr;
 
+struct TouchedAnimation {
+  lv_obj_t* _anim_circle = nullptr;
+  void start(lv_point_t p)
+  {
+    if (_anim_circle != nullptr) {
+      lv_obj_del(_anim_circle);
+    }
+    // TODO create the circle as an lv_arc here
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_exec_cb(&a, anim_func);
+    lv_anim_set_var(&a, _anim_circle);
+    lv_anim_set_time(&a, 1500);
+  }
+  static void anim_func(void*, int32_t) {}
+};
+
+TouchedAnimation touchedAnimation;
+
 struct DisplayEventObserver : public EventObserver {
-  virtual void notice(const Event&) override {
+  virtual void notice(const Event& event) override
+  {
     xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
+    if (event.event == EVENT_SCREEN_TOUCHED) {
+      touchedAnimation.start(event.point);
+    }
   }
   virtual const char* name() override { return "display"; }
 };
@@ -93,11 +115,11 @@ void create_temp_display() { }
 
 lv_obj_t* aqi = NULL;
 
-void setDisplayBacklight(bool on)
+void create_aqi_display()
 {
 }
 
-bool getDisplayBacklight() { return backlightIsOn; }
+void setDisplayBacklight(bool on) { }
 
 void displayTask(void*)
 {
@@ -189,7 +211,7 @@ void displayTask(void*)
 #else
         || true
 #endif
-        ) {
+    ) {
       lv_task_handler();
     } else {
       // ESP_ERROR_CHECK(esp_timer_stop(lvgl_tick_timer));

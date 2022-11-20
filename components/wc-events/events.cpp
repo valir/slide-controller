@@ -42,9 +42,9 @@ template <typename T> struct ReduceEventsFrequency {
 };
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-void Events::postTouchedEvent()
+void Events::postTouchedEvent(lv_point_t p)
 {
-  postEvent(Event { .event = EVENT_SCREEN_TOUCHED });
+  postEvent(Event { .event = EVENT_SCREEN_TOUCHED, .point = p });
 }
 
 void Events::postHeartbeatEvent() { postEvent({ .event = EVENT_HEARTBEAT }); }

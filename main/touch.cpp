@@ -123,7 +123,7 @@ void touchScreenTask(void*)
             == lv_indev_search_obj(lv_scr_act(), &touchedPoint)) {
           // user touched the screen, and did not hit any object, so let's
           // send the touched event to home assistant
-          events.postTouchedEvent();
+          events.postTouchedEvent(touchedPoint);
           vTaskDelay(pdMS_TO_TICKS(1000)); // wait a bit to avoid repeat
                                            // sending for same touch event
           xTaskNotifyStateClear(NULL);

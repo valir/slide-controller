@@ -15,6 +15,10 @@ config OTA_IP
   string "OTA server IP address"
   default ""
 
+config NTP_SERVER
+  string "NTP Server"
+  default ""
+
 config HAS_INTERNAL_SENSOR
   bool "Has internal sensor"
   default n
