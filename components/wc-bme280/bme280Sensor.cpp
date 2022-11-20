@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "sensors.h"
 #include "events.h"
-#include "display.h"
 
 
 #define PIN_NUM_SDI 26
@@ -14,8 +13,8 @@
 static const char* TAG = "BME280";
 
 uint8_t dev_addr = BME280_I2C_ADDR_PRIM;
-struct bme280_data comp_data;
-struct bme280_dev dev;
+static struct bme280_data comp_data;
+static struct bme280_dev dev;
 bool sensor_init_ok = false;
 
 void bme280Sensor::init()
@@ -74,14 +73,10 @@ void bme280Sensor::sensors_timer()
     ESP_LOGE(TAG, "_get_sensor_data status %d", _res);
     return;
   }
-  sensors_info.status = SENSOR_STATUS_RUNNING;
-  sensors_info.temperature = comp_data.temperature + sensors_info.cal_temperature;
-  sensors_info.relative_humidity = comp_data.humidity + sensors_info.cal_rel_humidity;
-  sensors_info.pressure = comp_data.pressure;
-  events.postAirTemperatureEvent(sensors_info.temperature);
-  events.postAirHumidityEvent(sensors_info.relative_humidity);
-  events.postAirPressureEvent(sensors_info.pressure/100);
-  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
+  sensors_info.set_status(  SENSOR_STATUS_RUNNING );
+  sensors_info.set_temperature( comp_data.temperature );
+  sensors_info.set_rel_humidity( comp_data.humidity );
+  sensors_info.set_pressure( comp_data.pressure );
 
   // initiate next measurement
   _res = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);

@@ -10,9 +10,12 @@
 #include "display.h"
 #include "hal/lv_hal_disp.h"
 #include "mainpanel.h"
+#ifndef CONFIG_HAS_NO_SENSOR
 #include "sensors.h"
+#endif
 #include "statusbar.h"
 #include "backlight.h"
+#include "events.h"
 
 
 // Pins for the ILI9341 and ESP32
@@ -36,9 +39,14 @@ static void lv_tick_task(void*) { lv_tick_inc(LV_TICK_PERIOD_MS); }
 
 lv_color_t* buf1 = nullptr;
 
-void display_events_observer() {
-  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
-}
+struct DisplayEventObserver : public EventObserver {
+  virtual void notice(const Event&) override {
+    xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
+  }
+  virtual const char* name() override { return "display"; }
+};
+
+static DisplayEventObserver displayEventObserver;
 
 void display_allocate_heap()
 {
@@ -142,6 +150,8 @@ void displayTask(void*)
   StatusBar status_bar(lv_scr_act());
   MainPanel main_panel(lv_scr_act());
 
+  events.registerObserver(&displayEventObserver);
+
   // label = lv_label_create(lv_scr_act());
   // lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
   // lv_label_set_text(label, "Press a button");
@@ -174,8 +184,8 @@ void displayTask(void*)
 
   for (;;) {
     if ((lv_disp_get_inactive_time(NULL) < 1000)
-#ifndef ENV_NO_SENSOR
-        || (sensors_info.status != SENSOR_STATUS_RUNNING)
+#ifndef CONFIG_HAS_NO_SENSOR
+        || (!sensors_info.is_running())
 #else
         || true
 #endif

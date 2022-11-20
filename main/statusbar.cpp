@@ -2,7 +2,6 @@
 #include <simpleDSTadjust.h>
 #include "statusbar.h"
 #include <WiFi.h>
-#include "sensors.h"
 
 extern simpleDSTadjust dstAdjusted;
 

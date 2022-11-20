@@ -38,3 +38,14 @@ endchoice
 
 endmenu
 
+menu "Hidden computer values"
+  visible if n
+
+config HAS_NO_SENSOR
+  bool "No sensors in this device"
+  default y if !HAS_INTERNAL_SENSOR || !HAS_EXTERNAL_SENSOR
+
+
+endmenu
+
+

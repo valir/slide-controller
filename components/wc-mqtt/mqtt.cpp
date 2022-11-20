@@ -1,4 +1,6 @@
 
+#include "mqtt.h"
+#include "buzzer.h"
 #include <cstdio>
 #include <esp_err.h>
 #include <esp_event.h>
@@ -12,14 +14,9 @@
 #include <mqtt_client.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef ENV_NO_SENSOR
-#include "display.h"
-#endif
-#include "buzzer.h"
+#ifndef CONFIG_HAS_NO_SENSOR
 #include "sensors.h"
-
-
-
+#endif
 #include <events.h>
 
 extern TaskHandle_t otaTaskHandle;
@@ -33,6 +30,11 @@ static const char* TAG = "MQTT";
 #define MQTT_TOPIC_EXT_CALIBRATE "cmd/" CONFIG_HOSTNAME "/ext_calibrate"
 #define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
 #define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
+
+class MqttEventObserver : public EventObserver {
+  virtual void notice(const Event&) override;
+  virtual const char* name() override { return "mqtt"; }
+};
 
 struct MqttSubscription {
   const char* TOPIC;
@@ -75,7 +77,7 @@ void handleNightMode(const char* data, int data_len)
       TAG, "handleNightMode received unknown parameter %.*s", data_len, data);
 }
 
-#ifndef ENV_NO_SENSOR
+#ifndef CONFIG_HAS_NO_SENSOR
 void handleCalibrate(const char* data, int data_len)
 {
   // calibrate message payload has three float values: temp RH IAQ
@@ -83,15 +85,17 @@ void handleCalibrate(const char* data, int data_len)
     ESP_LOGE(TAG, "handleCalibrate: Incorrect data received");
     return;
   }
+  float cal_temperature, cal_rel_humidity, cal_iaq;
   if (3
-      != sscanf(data, "%f %f %f", &sensors_info.cal_temperature,
-          &sensors_info.cal_rel_humidity, &sensors_info.cal_iaq)) {
+      != sscanf(
+          data, "%f %f %f", &cal_temperature, &cal_rel_humidity, &cal_iaq)) {
     ESP_LOGE(TAG, "handleCalibrate: incorrect params %.*s", data_len, data);
   } else {
     ESP_LOGI(TAG, "handleCalibrate: accepted %.*s", data_len, data);
+    sensors_info.set_cal_values(cal_temperature, cal_rel_humidity, cal_iaq);
   }
 }
-#endif // ENV_NO_SENSOR
+#endif // CONFIG_HAS_NO_SENSOR
 
 #if CONFIG_HAS_EXTERNAL_SENSOR
 void handleExtCalibrate(const char* data, int data_len)
@@ -119,8 +123,7 @@ void handleOtaCmd(const char* data, int data_len)
   char cmd[CMD_LENGTH + 1];
   sscanf(data, "%8s", cmd);
   if (strncasecmp(cmd, STR_CMD_START, CMD_LENGTH) == 0) {
-      xTaskCreate(
-          &otaTask, "otaTask", 8192, NULL, 3, &otaTaskHandle);
+    xTaskCreate(&otaTask, "otaTask", 8192, NULL, 3, &otaTaskHandle);
   }
 }
 
@@ -128,9 +131,9 @@ void handleSound(const char* data, int data_len)
 {
   if (strncasecmp(data, "alert on", 8) == 0) {
     buzzer.startAlert();
-  } else if (strncasecmp(data, "alert off", 9) ==0) {
+  } else if (strncasecmp(data, "alert off", 9) == 0) {
     buzzer.stopAlert();
-  } else if (strncasecmp(data, "doorbell", 8) ==0) {
+  } else if (strncasecmp(data, "doorbell", 8) == 0) {
     buzzer.doorbell();
   }
 }
@@ -139,8 +142,8 @@ void handleSound(const char* data, int data_len)
 struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
   { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
-  { .TOPIC = MQTT_TOPIC_SOUND, .qos =1, .func = handleSound },
-#ifndef ENV_NO_SENSOR
+  { .TOPIC = MQTT_TOPIC_SOUND, .qos = 1, .func = handleSound },
+#ifndef CONFIG_HAS_NO_SENSOR
   { .TOPIC = MQTT_TOPIC_CALIBRATE, .qos = 0, .func = handleCalibrate },
 #endif
   { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
@@ -152,17 +155,11 @@ struct MqttSubscription mqttSubscriptions[] = {
 
 static const char* CONFIG_BROKER_URL = "mqtt://bb-master";
 #define MQTT_PREFIX "barlog/" CONFIG_HOSTNAME
+static esp_mqtt_client_handle_t client;
 
-static void log_error_if_nonzero(const char* message, int error_code)
-{
-  if (error_code != 0) {
-    ESP_LOGE(TAG, "Last error %s: 0x%x", message, error_code);
-  }
-}
-
-static void postHeartbeatEvent(void*) {
-  events.postHeartbeatEvent();
-}
+#ifndef CONFIG_HAS_INTERNAL_SENSOR
+static void postHeartbeatEvent(void*) { events.postHeartbeatEvent(); }
+#endif
 
 static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
 {
@@ -171,7 +168,7 @@ static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
     subscription->subscribe(client);
     subscription++;
   }
-#ifdef ENV_NO_SENSOR
+#ifndef CONFIG_HAS_INTERNAL_SENSOR
   esp_timer_create_args_t timer_args = { .callback = postHeartbeatEvent,
     .arg = nullptr,
     .dispatch_method = ESP_TIMER_TASK,
@@ -179,7 +176,6 @@ static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
   esp_timer_handle_t timer_handle;
   ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle));
   ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 10 * 1000 * 1000));
-  xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
 #endif
 }
 
@@ -235,18 +231,6 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     break;
   case MQTT_EVENT_ERROR:
     ESP_LOGD(TAG, "MQTT_EVENT_ERROR");
-    // if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
-    //   log_error_if_nonzero(
-    //       "reported from esp-tls",
-    //       event->error_handle->esp_tls_last_esp_err);
-    //   log_error_if_nonzero(
-    //       "reported from tls stack",
-    //       event->error_handle->esp_tls_stack_err);
-    //   log_error_if_nonzero("captured as transport's socket errno",
-    //       event->error_handle->esp_transport_sock_errno);
-    //   ESP_LOGD(TAG, "Last errno string (%s)",
-    //       strerror(event->error_handle->esp_transport_sock_errno));
-    // }
     break;
   default:
     ESP_LOGD(TAG, "Other event id:%d", event->event_id);
@@ -254,25 +238,97 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
   }
 }
 
+void MqttEventObserver::notice(const Event& event)
+{
+  MqttEventInfo mqttEvent;
+  constexpr size_t DATA_BUSIZE = 8;
+  char data[DATA_BUSIZE];
+  memset(data, 0, DATA_BUSIZE);
+  switch (event.event) {
+  case EVENT_HEARTBEAT:
+    mqttEvent.name = "heartbeat";
+    strcpy(data, "on");
+    break;
+  case EVENT_SENSOR_TEMPERATURE:
+    mqttEvent.name = "air_temperature";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
+    break;
+  case EVENT_SENSOR_HUMIDITY:
+    mqttEvent.name = "air_humidity";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
+    break;
+  case EVENT_SCREEN_TOUCHED:
+    mqttEvent.name = "touched";
+    break;                      // this event does not associate data
+  case EVENT_SENSOR_GAS_STATUS: // BSEC_OUTPUT_RUN_IN_STATUS
+    mqttEvent.name = "gas_status";
+    snprintf(data, DATA_BUSIZE, "%d", event.gas_status);
+    break;
+  case EVENT_SENSOR_IAQ:
+    mqttEvent.name = "air_iaq";
+    snprintf(data, DATA_BUSIZE, "%.2f", event.air_iaq);
+    break;
+  case EVENT_SENSOR_CO2:
+    mqttEvent.name = "air_co2";
+    snprintf(data, DATA_BUSIZE, "%.2f", event.air_co2);
+    break;
+  case EVENT_SENSOR_VOC:
+    mqttEvent.name = "air_voc";
+    snprintf(data, DATA_BUSIZE, "%.2f", event.air_voc);
+    break;
+  case EVENT_SENSOR_PRESSURE:
+    mqttEvent.name = "air_pressure";
+    snprintf(data, DATA_BUSIZE, "%.0f", event.air_pressure);
+    break;
+#if ENV_EXT_SENSOR == 1
+  case EVENT_SENSOR_EXT_TEMPERATURE:
+    mqttEvent.name = "ext_temperature";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
+    break;
+  case EVENT_SENSOR_EXT_HUMIDITY:
+    mqttEvent.name = "ext_humidity";
+    snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
+    break;
+#endif
+  case EVENT_OTA_STARTED:
+    mqttEvent.name = "ota";
+    strcpy(data, "start");
+    break;
+  case EVENT_OTA_DONE_OK:
+    mqttEvent.name = "ota";
+    strcpy(data, "OK");
+    break;
+  case EVENT_OTA_DONE_FAIL:
+    mqttEvent.name = "ota";
+    strcpy(data, "FAIL");
+    break;
+  default:
+    ESP_LOGE(TAG, "Unknown event type %d", event.event);
+  }
+  mqttEvent.data = std::string(data);
+
+  // finally, post the event
+  static char* topic;
+  constexpr size_t TOPIC_LEN = 80;
+  topic = (char*)malloc(TOPIC_LEN);
+  snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", mqttEvent.name);
+  ESP_LOGI(TAG, "%s %s", topic, mqttEvent.data.c_str());
+  esp_mqtt_client_publish(
+      client, topic, mqttEvent.data.c_str(), mqttEvent.data.size(), 1, 0);
+}
+
 void mqttTask(void*)
 {
   esp_mqtt_client_config_t mqtt_cfg = {
     .uri = CONFIG_BROKER_URL,
   };
-  esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+  client = esp_mqtt_client_init(&mqtt_cfg);
   esp_mqtt_client_register_event(client,
       (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
   ESP_ERROR_CHECK(esp_mqtt_client_start(client));
 
-  static char* topic;
-  constexpr size_t TOPIC_LEN = 80;
-  topic = (char*)malloc(TOPIC_LEN);
-  for (;;) {
-    MqttEventInfo mqttEvent = events.waitNextEvent();
-    snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", mqttEvent.name);
-    ESP_LOGI(TAG, "%s %s", topic, mqttEvent.data.c_str());
-    esp_mqtt_client_publish(
-        client, topic, mqttEvent.data.c_str(), mqttEvent.data.size(), 1, 0);
-  }
+  static MqttEventObserver observer;
+  events.registerObserver(&observer);
+
   vTaskDelete(nullptr);
 }

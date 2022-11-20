@@ -4,6 +4,4 @@ idf_component_register(
     events.cpp
   INCLUDE_DIRS
     "include"
-  REQUIRES
-    wc-mqtt
    )

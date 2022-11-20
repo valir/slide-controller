@@ -2,7 +2,6 @@
 #define _EVENTS_H_INCLUDED_
 
 #include <esp_event.h>
-#include <mqtt.h>
 
 enum WallControllerEvent {
   EVENT_STATUS_UPDATE,
@@ -38,16 +37,20 @@ struct Event {
     bool gas_status;
     float air_iaq;
     float air_co2;
-    float air_voc; //
+    float air_voc;      //
     float air_pressure; // hPa
   };
 };
 
-class Events
-{
-public:
-  Events ();
-  virtual ~Events ();
+struct EventObserver {
+  virtual void notice(const Event&) = 0;
+  virtual const char* name() =0;
+};
+
+class Events {
+  public:
+  Events();
+  virtual ~Events();
   void postHeartbeatEvent();
   void postAirTemperatureEvent(float);
   void postAirHumidityEvent(float);
@@ -61,11 +64,10 @@ public:
   void postOtaStarted();
   void postOtaDoneOk();
   void postOtaDoneFail();
-  MqttEventInfo waitNextEvent();
+  void registerObserver(EventObserver*);
 
-private:
+  private:
   void postEvent(Event&& theEvent);
-  QueueHandle_t event_queue;
 };
 
 extern Events events;

@@ -1,4 +1,4 @@
-# if (CONFIG_USE_SENSOR_BME680)
+if(CONFIG_USE_SENSOR_BME680)
 idf_component_register(
   SRCS
     bme680Sensor.cpp
@@ -6,9 +6,7 @@ idf_component_register(
     include
   REQUIRES
     Bosch-BSEC2-Library
-    events
+    wc-events
     wc-sensors
   )
-
-# endif()
-
+endif()

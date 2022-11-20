@@ -51,7 +51,7 @@ extern "C" void app_main() {
   ESP_LOGI(TAG, "Starting tasks...");
   xTaskCreatePinnedToCore(displayTask, "displayTask", 12288, NULL, 1, &displayTaskHandle, 1);
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 8192, NULL, 1, &wifiTaskHandle, 1);
-#ifndef ENV_NO_SENSOR
+#ifndef CONFIG_HAS_NO_SENSOR
   xTaskCreatePinnedToCore(sensors_task, "sensorsTask", 8192, NULL, 2, &sensorsTaskHandle, 1);
 #endif
   xTaskCreatePinnedToCore(touchScreenTask, "touchTask", 8192, NULL, 1, &touchScreenTaskHandle, 1);

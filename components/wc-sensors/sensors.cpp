@@ -6,7 +6,18 @@
 #include <freertos/task.h>
 #include <string.h>
 
-#include <internal-sensor.h>
+#if CONFIG_HAS_INTERNAL_SENSOR
+#if CONFIG_USE_SENSOR_BME680
+#include <bme680Sensor.h>
+#define BME_SENSOR_TYPE bme680Sensor
+
+#endif
+#if CONFIG_USE_SENSOR_BME280
+#include <bme280Sensor.h>
+#define BME_SENSOR_TYPE bme280Sensor
+
+#endif
+#endif
 
 #include "events.h"
 #include "sensors.h"
@@ -26,6 +37,37 @@
 static const char* TAG = "SENSORS";
 
 Sensors_Info sensors_info;
+
+void Sensors_Info::set_temperature(float t)
+{
+  temperature = t + cal_temperature;
+  events.postAirTemperatureEvent(temperature);
+}
+
+void Sensors_Info::set_rel_humidity(float h)
+{
+  relative_humidity = h + cal_rel_humidity;
+  events.postAirHumidityEvent(relative_humidity);
+}
+
+void Sensors_Info::set_pressure(float p)
+{
+  pressure = p + cal_pressure;
+  events.postAirPressureEvent(pressure / 100);
+}
+
+#ifdef ENV_EXT_SENSOR
+void Sensors_Info::set_ext_temperature(float t)
+{
+  ext_temperature = t + cal_ext_temperature;
+  events.postExtTemperatureEvent(ext_temperature);
+}
+void Sensors_Info::set_ext_humidity(float h)
+{
+  ext_humidity = h + cal_ext_humidity;
+  events.postExtHumidityEvent(ext_humidity);
+}
+#endif
 
 void heartbeat() { events.postHeartbeatEvent(); }
 

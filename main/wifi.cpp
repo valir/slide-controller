@@ -2,9 +2,9 @@
 #include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <WiFi.h>
 #include <esp_log.h>
 #include <esp_ota_ops.h>
-#include <WiFi.h>
 #include <simpleDSTadjust.h>
 
 static const char* TAG = "WIFI";
@@ -55,7 +55,9 @@ struct dstRule endRule = { "EEST", Last, Sun, Oct, 2, 0 };
 simpleDSTadjust dstAdjusted(startRule, endRule);
 
 TaskHandle_t mqttTaskHandle = NULL;
+TaskHandle_t eventsTaskHandle = NULL;
 void mqttTask(void*);
+void eventsTask(void*);
 
 void wifiTask(void*)
 {
@@ -85,6 +87,10 @@ void wifiTask(void*)
       state = WIFI_STATE_RUNNING;
     } break;
     case WIFI_STATE_RUNNING:
+      if (NULL == eventsTaskHandle) {
+        xTaskCreatePinnedToCore(
+            eventsTask, "eventsTask", 8192, NULL, 1, &eventsTaskHandle, 1);
+      }
       if (NULL == mqttTaskHandle) {
         xTaskCreatePinnedToCore(
             mqttTask, "mqttTask", 8192, NULL, 1, &mqttTaskHandle, 0);
@@ -94,6 +100,8 @@ void wifiTask(void*)
         state = WIFI_STATE_STARTING;
         vTaskDelete(mqttTaskHandle);
         mqttTaskHandle = NULL;
+        vTaskDelete(eventsTaskHandle);
+        eventsTaskHandle = NULL;
       }
       break;
     case WIFI_STATE_RECONNECTING:
