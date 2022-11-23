@@ -179,6 +179,8 @@ static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
 #endif
 }
 
+bool mqtt_connected = false;
+
 static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     int32_t event_id, void* event_data)
 {
@@ -191,10 +193,12 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
   switch ((esp_mqtt_event_id_t)event_id) {
   case MQTT_EVENT_CONNECTED:
     ESP_LOGD(TAG, "MQTT_EVENT_CONNECTED");
+    mqtt_connected = true;
     onMqttConnectedEvent(client);
     break;
   case MQTT_EVENT_DISCONNECTED:
     ESP_LOGD(TAG, "MQTT_EVENT_DISCONNECTED");
+    mqtt_connected = false;
     break;
 
   case MQTT_EVENT_SUBSCRIBED:
@@ -307,14 +311,18 @@ void MqttEventObserver::notice(const Event& event)
   }
   mqttEvent.data = std::string(data);
 
-  // finally, post the event
-  static char* topic;
-  constexpr size_t TOPIC_LEN = 80;
-  topic = (char*)malloc(TOPIC_LEN);
-  snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", mqttEvent.name);
-  ESP_LOGI(TAG, "%s %s", topic, mqttEvent.data.c_str());
-  esp_mqtt_client_publish(
-      client, topic, mqttEvent.data.c_str(), mqttEvent.data.size(), 1, 0);
+  if (!mqtt_connected) {
+    ESP_LOGE(TAG, "ignoring event %s", mqttEvent.name);
+  } else {
+    // finally, post the event
+    static char* topic;
+    constexpr size_t TOPIC_LEN = 80;
+    topic = (char*)malloc(TOPIC_LEN);
+    snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", mqttEvent.name);
+    ESP_LOGI(TAG, "%s %s", topic, mqttEvent.data.c_str());
+    esp_mqtt_client_publish(
+        client, topic, mqttEvent.data.c_str(), mqttEvent.data.size(), 1, 0);
+  }
 }
 
 void mqttTask(void*)

@@ -17,6 +17,7 @@ void connectWifi()
 {
   if (WiFi.status() == WL_CONNECTED)
     return;
+  WiFi.disconnect();
   ESP_LOGI(TAG, "Connnecting to WiFi %s / %s", WIFI_SSID, WIFI_PASS);
   WiFi.setHostname(WIFI_HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -61,8 +62,8 @@ void eventsTask(void*);
 
 void wifiTask(void*)
 {
-  // setenv("TZ", "EET", 1);
-  // tzset();
+  static constexpr auto RECONNECT_COUNT = 10;
+  static int reconnectCount = RECONNECT_COUNT;
   vTaskDelay(pdMS_TO_TICKS(1000));
   WifiTaskState state = WIFI_STATE_STARTING;
   for (;;) {
@@ -95,19 +96,22 @@ void wifiTask(void*)
       }
       if (WiFi.status() != WL_CONNECTED) {
         ESP_LOGI(TAG, "Connection lost, reconnecting");
-        state = WIFI_STATE_STARTING;
-        vTaskDelete(mqttTaskHandle);
-        mqttTaskHandle = NULL;
-        vTaskDelete(eventsTaskHandle);
+        state = WIFI_STATE_RECONNECTING;
         eventsTaskHandle = NULL;
       }
       break;
     case WIFI_STATE_RECONNECTING:
-      connectWifi();
-      if (WiFi.status() == WL_CONNECTED) {
+      if (WiFi.status() == WL_CONNECTED) { // recheck if we got reconnected
+                                           // meanwhile
         state = WIFI_STATE_RUNNING;
+        reconnectCount = RECONNECT_COUNT;
       } else {
         state = WIFI_STATE_RECONNECTING;
+        if (--reconnectCount == 0) {
+          ESP_LOGE(TAG, "Too many failed reconnect attemts. Restarting...");
+          esp_restart();
+        }
+        connectWifi();
       }
       break;
     }
