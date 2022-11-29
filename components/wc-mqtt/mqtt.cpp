@@ -338,5 +338,12 @@ void mqttTask(void*)
   static MqttEventObserver observer;
   events.registerObserver(&observer);
 
+  while (true) {
+    vTaskDelay(pdMS_TO_TICKS(10000));
+    if (!mqtt_connected) {
+      esp_mqtt_client_reconnect(client);
+    }
+  }
+
   vTaskDelete(nullptr);
 }
