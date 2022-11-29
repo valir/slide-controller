@@ -1,6 +1,7 @@
 
 .cache
 build/
+build.*/
 sdkconfig.old
 sdkconfig.ci
 **/*.swp
