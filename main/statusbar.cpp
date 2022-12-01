@@ -1,11 +1,6 @@
 
-#include <simpleDSTadjust.h>
 #include "statusbar.h"
 #include <esp_wifi.h>
-
-extern simpleDSTadjust dstAdjusted;
-
-
 
 lv_obj_t *time_label = nullptr;
 lv_obj_t *status_label = nullptr;
@@ -48,7 +43,7 @@ int8_t getWifiQuality() {
 
 void StatusBar::update() {
   static bool firstUpdate = true;
-  time_t now = dstAdjusted.time(nullptr);
+  time_t now = ::time(nullptr);
   struct tm * timeinfo = localtime(&now);
   lv_label_set_text_fmt(time_label, "%2d:%02d",timeinfo->tm_hour, timeinfo->tm_min);
 

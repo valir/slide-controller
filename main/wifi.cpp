@@ -10,11 +10,12 @@
 #include "esp_event.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "nvs_flash.h"
+#include <cstring>
+#include <esp_sntp.h>
+#include <time.h>
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include <simpleDSTadjust.h>
 
 static const char* TAG = "WIFI";
 
@@ -27,10 +28,6 @@ static EventGroupHandle_t s_wifi_event_group;
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
-
-struct dstRule startRule = { "EEST", Last, Sun, Mar, 2, 3600 };
-struct dstRule endRule = { "EET", Last, Sun, Oct, 2, 0 };
-simpleDSTadjust dstAdjusted(startRule, endRule);
 
 TaskHandle_t mqttTaskHandle = NULL;
 TaskHandle_t eventsTaskHandle = NULL;
@@ -59,6 +56,11 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     s_retry_num = 0;
     xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
   }
+}
+
+void time_sync_notification_cb(struct timeval*)
+{
+  ESP_LOGI(TAG, "time_sync_notification");
 }
 
 void wifiTask(void*)
@@ -92,45 +94,58 @@ void wifiTask(void*)
   wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
   ESP_LOGI(TAG, "wifi_init_sta finished.");
 
   for (bool isSane = true; isSane;) {
-    ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_LOGI(TAG, "wifi started");
 
-    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
-    while (isSane) {
-      /* Waiting until either the connection is established
-       * (WIFI_CONNECTED_BIT) or connection failed for the maximum number of
-       * re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see
-       * above) */
-      EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
-          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdTRUE, pdFALSE,
-          portMAX_DELAY);
+    /* Waiting until either the connection is established
+     * (WIFI_CONNECTED_BIT) or connection failed for the maximum number of
+     * re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see
+     * above) */
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
+        WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
 
-      if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", CONFIG_WIFI_SSID,
-            CONFIG_WIFI_PASS);
-        if (NULL == eventsTaskHandle) {
-          xTaskCreatePinnedToCore(
-              eventsTask, "eventsTask", 8192, NULL, 1, &eventsTaskHandle, 1);
+    if (bits & WIFI_CONNECTED_BIT) {
+      ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", CONFIG_WIFI_SSID,
+          CONFIG_WIFI_PASS);
+
+      static bool need_sntp_init = true;
+      if (need_sntp_init) {
+        const char* TZ_VAR =  "EET-2EEST,M3.5.0,M10.5.0";
+        setenv("TZ", TZ_VAR, 1);
+        tzset();
+        sntp_setoperatingmode(SNTP_OPMODE_POLL);
+        sntp_setservername(0, CONFIG_NTP_SERVER);
+        sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+        sntp_init();
+        need_sntp_init = false;
+        while (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+          ESP_LOGI(TAG, "Waiting for system time to be set...");
+          vTaskDelay(pdMS_TO_TICKS(2000));
         }
-        if (NULL == mqttTaskHandle) {
-          xTaskCreatePinnedToCore(
-              mqttTask, "mqttTask", 8192, NULL, 1, &mqttTaskHandle, 0);
-        }
-      } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-            CONFIG_WIFI_SSID, CONFIG_WIFI_PASS);
-        ESP_ERROR_CHECK(esp_wifi_stop());
-        ESP_LOGI(TAG, "wifi stopped");
-      } else {
-        ESP_LOGE(TAG, "UNEXPECTED EVENT");
-        isSane = false;
-        break; // exit task - this will require device reset
       }
+
+      if (NULL == eventsTaskHandle) {
+        xTaskCreatePinnedToCore(
+            eventsTask, "eventsTask", 8192, NULL, 1, &eventsTaskHandle, 1);
+      }
+      if (NULL == mqttTaskHandle) {
+        xTaskCreatePinnedToCore(
+            mqttTask, "mqttTask", 8192, NULL, 1, &mqttTaskHandle, 0);
+      }
+    } else if (bits & WIFI_FAIL_BIT) {
+      ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
+          CONFIG_WIFI_SSID, CONFIG_WIFI_PASS);
+      ESP_LOGI(TAG, "wifi stopped");
+    } else {
+      ESP_LOGE(TAG, "UNEXPECTED EVENT");
+      isSane = false;
+      break; // exit task - this will require device reset
     }
   }
+  ESP_ERROR_CHECK(esp_wifi_stop());
   /* The event will not be processed after unregister */
   ESP_ERROR_CHECK(esp_event_handler_instance_unregister(
       IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));

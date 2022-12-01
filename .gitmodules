@@ -10,9 +10,6 @@
 [submodule "components/mq135"]
 	path = components/mq135
 	url = git@github.com:valir/MQ135.git
-[submodule "components/simleDSTadjust"]
-	path = components/simleDSTadjust
-	url = git@github.com:valir/simpleDSTadjust.git
 [submodule "components/lvgl"]
 	path = components/lvgl
 	url = https://github.com/lvgl/lvgl.git
