@@ -1,7 +1,7 @@
 
 #include <simpleDSTadjust.h>
 #include "statusbar.h"
-#include <WiFi.h>
+#include <esp_wifi.h>
 
 extern simpleDSTadjust dstAdjusted;
 
@@ -34,7 +34,9 @@ StatusBar::StatusBar(lv_obj_t *parent) {
 
 
 int8_t getWifiQuality() {
-  int32_t dbm = WiFi.RSSI();
+  wifi_ap_record_t ap_info;
+  ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
+  auto dbm = ap_info.rssi;
   if(dbm <= -100) {
       return 0;
   } else if(dbm >= -50) {

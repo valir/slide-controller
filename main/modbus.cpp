@@ -5,7 +5,6 @@
 #include <esp_event.h>
 #include <esp_netif.h>
 #include <esp_modbus_slave.h>
-#include <WiFi.h>
 
 
 #pragma pack(push,1)

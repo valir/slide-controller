@@ -98,6 +98,7 @@ void wifiTask(void*)
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_LOGI(TAG, "wifi started");
 
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
     while (isSane) {
       /* Waiting until either the connection is established
        * (WIFI_CONNECTED_BIT) or connection failed for the maximum number of
