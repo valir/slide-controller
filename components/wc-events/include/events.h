@@ -29,10 +29,25 @@ enum WallControllerStatus {
   STATUS_DHT_FAIL = 0x01,
 };
 
+enum TouchGesture {
+  TOUCH_GESTURE_OFF =0, // special value meaning no gesture was actually found
+  TOUCH_GESTURE_SHORT_PRESS,
+  TOUCH_GESTURE_LONG_PRESS,
+  TOUCH_GESTURE_SWIPE_LEFT,
+  TOUCH_GESTURE_SWIPE_RIGHT,
+  TOUCH_GESTURE_SWIPE_UP,
+  TOUCH_GESTURE_SWIPE_DOWN,
+  TOUCH_GESTURE_MAX
+};
+
 struct Event {
   WallControllerEvent event;
   union {
     WallControllerStatus status;
+    struct {
+      TouchGesture gesture;
+      lv_point_t p;
+    } touch_info;
     float air_temperature;
     float air_humidity;
     bool gas_status;
@@ -40,7 +55,6 @@ struct Event {
     float air_co2;
     float air_voc;      //
     float air_pressure; // hPa
-    lv_point_t point;
   };
 };
 
@@ -60,7 +74,7 @@ class Events {
   void postAirCO2Event(float);
   void postAirVOCEvent(float);
   void postAirPressureEvent(float);
-  void postTouchedEvent(lv_point_t);
+  void postTouchedEvent(TouchGesture, lv_point_t);
   void postExtTemperatureEvent(float);
   void postExtHumidityEvent(float);
   void postOtaStarted();
@@ -69,7 +83,7 @@ class Events {
   void registerObserver(EventObserver*);
 
   private:
-  void postEvent(Event&& theEvent);
+  void postEvent(const Event& theEvent);
 };
 
 extern Events events;

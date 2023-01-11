@@ -5,9 +5,4 @@
 
 #include <string>
 
-struct MqttEventInfo {
-  const char* name;
-  std::string data;
-};
-
 #endif /* ifndef _MQTT_H_ */

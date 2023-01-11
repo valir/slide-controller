@@ -41,10 +41,14 @@ template <typename T> struct ReduceEventsFrequency {
   }
 };
 
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-void Events::postTouchedEvent(lv_point_t p)
+// #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+void Events::postTouchedEvent(TouchGesture g, lv_point_t p)
 {
-  postEvent(Event { .event = EVENT_SCREEN_TOUCHED, .point = p });
+  Event ev;
+  ev.event = EVENT_SCREEN_TOUCHED;
+  ev.touch_info.gesture = g;
+  ev.touch_info.p = p;
+  postEvent(ev);
 }
 
 void Events::postHeartbeatEvent() { postEvent({ .event = EVENT_HEARTBEAT }); }
@@ -125,7 +129,7 @@ void Events::postOtaDoneFail()
   postEvent(Event { .event = EVENT_OTA_DONE_FAIL });
 }
 
-void Events::postEvent(Event&& theEvent)
+void Events::postEvent(const Event& theEvent)
 {
   if (pdPASS != xQueueSendToBack(event_queue, &theEvent, 10)) {
     ESP_LOGE(TAG, "Failed to post %d event", theEvent.event);

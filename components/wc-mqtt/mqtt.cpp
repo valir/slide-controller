@@ -244,84 +244,95 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
 
 void MqttEventObserver::notice(const Event& event)
 {
-  MqttEventInfo mqttEvent;
+  const char* eventName = NULL;
   constexpr size_t DATA_BUSIZE = 8;
   char data[DATA_BUSIZE];
+  const char* constData = NULL;
   memset(data, 0, DATA_BUSIZE);
   switch (event.event) {
   case EVENT_HEARTBEAT:
-    mqttEvent.name = "heartbeat";
+    eventName = "heartbeat";
     strcpy(data, "on");
     break;
   case EVENT_SENSOR_TEMPERATURE:
-    mqttEvent.name = "air_temperature";
+    eventName = "air_temperature";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
     break;
   case EVENT_SENSOR_HUMIDITY:
-    mqttEvent.name = "air_humidity";
+    eventName = "air_humidity";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
     break;
-  case EVENT_SCREEN_TOUCHED:
-    mqttEvent.name = "touched";
-    break;                      // this event does not associate data
+  case EVENT_SCREEN_TOUCHED: {
+    eventName = "touched";
+    const char* gestures[TOUCH_GESTURE_MAX] = {
+      "invalid",
+      "short",
+      "long",
+      "swipe-left",
+      "swipe-right",
+      "swipe-up",
+      "swipe-down",
+    };
+    constData = gestures[event.touch_info.gesture];
+  } break;
   case EVENT_SENSOR_GAS_STATUS: // BSEC_OUTPUT_RUN_IN_STATUS
-    mqttEvent.name = "gas_status";
+    eventName = "gas_status";
     snprintf(data, DATA_BUSIZE, "%d", event.gas_status);
     break;
   case EVENT_SENSOR_IAQ:
-    mqttEvent.name = "air_iaq";
+    eventName = "air_iaq";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_iaq);
     break;
   case EVENT_SENSOR_CO2:
-    mqttEvent.name = "air_co2";
+    eventName = "air_co2";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_co2);
     break;
   case EVENT_SENSOR_VOC:
-    mqttEvent.name = "air_voc";
+    eventName = "air_voc";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_voc);
     break;
   case EVENT_SENSOR_PRESSURE:
-    mqttEvent.name = "air_pressure";
+    eventName = "air_pressure";
     snprintf(data, DATA_BUSIZE, "%.0f", event.air_pressure);
     break;
 #if ENV_EXT_SENSOR == 1
   case EVENT_SENSOR_EXT_TEMPERATURE:
-    mqttEvent.name = "ext_temperature";
+    eventName = "ext_temperature";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
     break;
   case EVENT_SENSOR_EXT_HUMIDITY:
-    mqttEvent.name = "ext_humidity";
+    eventName = "ext_humidity";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
     break;
 #endif
   case EVENT_OTA_STARTED:
-    mqttEvent.name = "ota";
+    eventName = "ota";
     strcpy(data, "start");
     break;
   case EVENT_OTA_DONE_OK:
-    mqttEvent.name = "ota";
+    eventName = "ota";
     strcpy(data, "OK");
     break;
   case EVENT_OTA_DONE_FAIL:
-    mqttEvent.name = "ota";
+    eventName = "ota";
     strcpy(data, "FAIL");
     break;
   default:
     ESP_LOGE(TAG, "Unknown event type %d", event.event);
   }
-  mqttEvent.data = std::string(data);
 
   if (!mqtt_connected) {
-    ESP_LOGE(TAG, "ignoring event %s", mqttEvent.name);
+    ESP_LOGE(TAG, "ignoring event %s", eventName);
   } else {
     // finally, post the event
+    const char* eventData = constData ? constData : data;
     static char* topic;
     constexpr size_t TOPIC_LEN = 80;
     topic = (char*)malloc(TOPIC_LEN);
-    snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", mqttEvent.name);
-    ESP_LOGI(TAG, "%s %s", topic, mqttEvent.data.c_str());
+    snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", eventName);
+    ESP_LOGI(TAG, "%s %s", topic, eventData);
     esp_mqtt_client_publish(
-        client, topic, mqttEvent.data.c_str(), mqttEvent.data.size(), 1, 0);
+        client, topic, eventData, strlen(eventData), 1, 0);
   }
 }
 

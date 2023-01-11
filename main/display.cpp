@@ -55,14 +55,11 @@ struct TouchedAnimation {
   static void anim_func(void*, int32_t) {}
 };
 
-TouchedAnimation touchedAnimation;
-
 struct DisplayEventObserver : public EventObserver {
   virtual void notice(const Event& event) override
   {
     xTaskNotify(displayTaskHandle, DISPLAY_UPDATE_WIDGETS, eSetBits);
     if (event.event == EVENT_SCREEN_TOUCHED) {
-      touchedAnimation.start(event.point);
     }
   }
   virtual const char* name() override { return "display"; }
