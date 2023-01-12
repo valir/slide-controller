@@ -60,10 +60,8 @@ void MainPanel::update()
 
     lv_obj_clear_flag(img_bulb, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(label_bulb, LV_OBJ_FLAG_HIDDEN);
-#ifdef CONFIG_HAS_INTERNAL_SENSOR
     // trigger delayed backlight turn-off so device won't heat-up
     BackLight::activateTimer();
-#endif
   }
 
 }

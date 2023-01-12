@@ -1,5 +1,5 @@
 
-menu "Wall Controller configuration"
+menu "Swipe Controller configuration"
 
 config HOSTNAME
   string "Host Name"
@@ -40,9 +40,15 @@ choice
 
 endchoice
 
+config BACKLIGHT_TIMEOUT
+  int "Backlight Timeout (s)"
+  default 5
+  help
+    Automatically turn off the backlight after the specified amount of seconds
+
 endmenu
 
-menu "Hidden computer values"
+menu "Hidden computed values"
   visible if n
 
 config HAS_NO_SENSOR

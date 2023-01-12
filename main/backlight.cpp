@@ -37,7 +37,7 @@ void BackLight::triggerTimer()
 {
   esp_timer_stop(
       timer); // stop timer if already running, no error check on purpose
-  ESP_ERROR_CHECK(esp_timer_start_once(timer, 5000 * 1000));
+  ESP_ERROR_CHECK(esp_timer_start_once(timer, CONFIG_BACKLIGHT_TIMEOUT * 1000 * 1000));
 }
 void BackLight::turnOn()
 {
