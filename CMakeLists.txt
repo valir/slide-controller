@@ -2,11 +2,15 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.5)
 
+file(STRINGS "version.txt" PROJECT_VER)
+
 set(SDKCONFIG_DEFAULTS
-  "sdkconfig.common;sdkconfig.wifi;sdkconfig.$ENV{WC_HOSTNAME}")
+  "sdkconfig.common;sdkconfig.wifi;sdkconfig.$ENV{SC_HOSTNAME}")
 set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-project(wall-controller)
+project(slide-controller)
+#
+# add_dependencies(${COMPONENT_LIB} next_version)
 

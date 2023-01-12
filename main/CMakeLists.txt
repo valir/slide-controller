@@ -15,3 +15,7 @@ idf_component_register(
   INCLUDE_DIRS "."
   )
 
+idf_build_get_property(SC_VERSION PROJECT_VER)
+message(STATUS "Building version: ${SC_VERSION}")
+idf_build_set_property(COMPILE_OPTIONS "-DSC_VERSION=${SC_VERSION}" APPEND)
+
