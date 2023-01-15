@@ -96,7 +96,7 @@ void Events::postAirPressureEvent(float x)
   }
 }
 
-#if ENV_EXT_SENSOR == 1
+#if CONFIG_HAS_EXTERNAL_SENSOR == 1
 void Events::postExtTemperatureEvent(float x)
 {
   static ReduceEventsFrequency<float> r;

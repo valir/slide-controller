@@ -22,7 +22,7 @@
 #include "events.h"
 #include "sensors.h"
 
-#if (ENV_EXT_SENSOR == 1)
+#if (CONFIG_HAS_EXTERNAL_SENSOR == 1)
 #include <esp32DHT.h>
 #define PIN_NUM_DHT GPIO_NUM_32
 #endif
@@ -56,7 +56,7 @@ void Sensors_Info::set_pressure(float p)
   events.postAirPressureEvent(pressure / 100);
 }
 
-#ifdef ENV_EXT_SENSOR
+#ifdef CONFIG_HAS_EXTERNAL_SENSOR
 void Sensors_Info::set_ext_temperature(float t)
 {
   ext_temperature = t + cal_ext_temperature;
@@ -71,7 +71,7 @@ void Sensors_Info::set_ext_humidity(float h)
 
 void heartbeat() { events.postHeartbeatEvent(); }
 
-#if ENV_EXT_SENSOR == 1
+#if CONFIG_HAS_EXTERNAL_SENSOR == 1
 class ext_sensor_wrapper {
   static DHT22 _ext_sensor;
 
@@ -105,12 +105,12 @@ class ext_sensor_wrapper {
 };
 DHT22 ext_sensor_wrapper::_ext_sensor;
 
-#else  // ENV_EXT_SENSOR
+#else  // CONFIG_HAS_EXTERNAL_SENSOR
 class ext_sensor_wrapper {
   protected:
   static void sensors_timer() { }
 };
-#endif // ENV_EXT_SENSOR
+#endif // CONFIG_HAS_EXTERNAL_SENSOR
 
 template <class S, class E> class sensor_wrapper : public E {
   static S _sensor;

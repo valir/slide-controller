@@ -17,7 +17,7 @@ class Sensors_Info {
   float cal_temperature = 0.;
   float cal_rel_humidity = 0.;
   float cal_pressure = 0.;
-#ifdef ENV_EXT_SENSOR
+#ifdef CONFIG_HAS_EXTERNAL_SENSOR
   float ext_temperature = 0.;
   float ext_humidity = 0.;
   float cal_ext_temperature = 0.;

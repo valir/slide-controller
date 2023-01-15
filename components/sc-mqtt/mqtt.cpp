@@ -295,7 +295,7 @@ void MqttEventObserver::notice(const Event& event)
     eventName = "air_pressure";
     snprintf(data, DATA_BUSIZE, "%.0f", event.air_pressure);
     break;
-#if ENV_EXT_SENSOR == 1
+#if CONFIG_HAS_EXTERNAL_SENSOR == 1
   case EVENT_SENSOR_EXT_TEMPERATURE:
     eventName = "ext_temperature";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
