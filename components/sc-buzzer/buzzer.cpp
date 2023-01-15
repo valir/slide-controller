@@ -80,3 +80,6 @@ void Buzzer::playOtaDownloading() {
   tone(NOTE_A, 7, 10);
 }
 
+void Buzzer::swipeDetectedTone() {
+  tone(NOTE_C, 8, 40);
+}

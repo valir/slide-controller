@@ -14,7 +14,7 @@
 #include <mqtt_client.h>
 #include <stdio.h>
 #include <string.h>
-#ifndef CONFIG_HAS_NO_SENSOR
+#if defined(CONFIG_HAS_INTERNAL_SENSOR) || defined(CONFIG_HAS_EXTERNAL_SENSOR)
 #include "sensors.h"
 #endif
 #include <events.h>
@@ -77,7 +77,7 @@ void handleNightMode(const char* data, int data_len)
       TAG, "handleNightMode received unknown parameter %.*s", data_len, data);
 }
 
-#ifndef CONFIG_HAS_NO_SENSOR
+#if CONFIG_HAS_INTERNAL_SENSOR
 void handleCalibrate(const char* data, int data_len)
 {
   // calibrate message payload has three float values: temp RH IAQ
@@ -95,7 +95,7 @@ void handleCalibrate(const char* data, int data_len)
     sensors_info.set_cal_values(cal_temperature, cal_rel_humidity, cal_iaq);
   }
 }
-#endif // CONFIG_HAS_NO_SENSOR
+#endif
 
 #if CONFIG_HAS_EXTERNAL_SENSOR
 void handleExtCalibrate(const char* data, int data_len)
@@ -143,11 +143,11 @@ struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
   { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
   { .TOPIC = MQTT_TOPIC_SOUND, .qos = 1, .func = handleSound },
-#ifndef CONFIG_HAS_NO_SENSOR
+#ifdef CONFIG_HAS_INTERNAL_SENSOR
   { .TOPIC = MQTT_TOPIC_CALIBRATE, .qos = 0, .func = handleCalibrate },
 #endif
   { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
-#if ENV_EXT_SENSOR == 1
+#if CONFIG_HAS_EXTERNAL_SENSOR
   { .TOPIC = MQTT_TOPIC_EXT_CALIBRATE, .qos = 1, .func = handleExtCalibrate },
 #endif
   { .TOPIC = nullptr }

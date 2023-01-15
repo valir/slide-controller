@@ -3,6 +3,7 @@
 #include "backlight.h"
 #include "display.h"
 #include "events.h"
+#include "buzzer.h"
 #include <XPT2046_Touchscreen.h>
 #include <algorithm>
 #include <driver/timer.h>
@@ -135,6 +136,7 @@ void detectGesture()
   if (gesture != TOUCH_GESTURE_OFF) {
     ESP_LOGI(TAG, "Detected gesture %d", gesture);
     xTaskNotify(touchScreenTaskHandle, TOUCH_GESTURE_BIT | gesture, eSetBits);
+    buzzer.swipeDetectedTone();
   }
   touchedPoints.clear();
 }

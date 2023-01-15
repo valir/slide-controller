@@ -5,5 +5,5 @@ idf_component_register(
     ota.cpp
   INCLUDE_DIRS
     "include"
-  PRIV_REQUIRES app_update mqtt wc-buzzer wc-sensors wc-events
+  PRIV_REQUIRES app_update mqtt sc-buzzer sc-sensors sc-events
   )

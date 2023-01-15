@@ -10,7 +10,7 @@
 #include "display.h"
 #include "hal/lv_hal_disp.h"
 #include "mainpanel.h"
-#ifndef CONFIG_HAS_NO_SENSOR
+#if defined(CONFIG_HAS_INTERNAL_SENSOR) || defined(CONFIG_HAS_EXTERNAL_SENSOR)
 #include "sensors.h"
 #endif
 #include "backlight.h"
@@ -203,7 +203,7 @@ void displayTask(void*)
 
   for (;;) {
     if ((lv_disp_get_inactive_time(NULL) < 1000)
-#ifndef CONFIG_HAS_NO_SENSOR
+#if defined(CONFIG_HAS_INTERNAL_SENSOR) || defined(CONFIG_HAS_EXTERNAL_SENSOR)
         || (!sensors_info.is_running())
 #else
         || true

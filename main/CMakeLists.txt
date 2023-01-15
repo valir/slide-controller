@@ -1,8 +1,8 @@
 
 idf_component_register(
   SRCS
-    wall-controller.cpp
-    rs485.cpp
+    slide-controller.cpp
+    # rs485.cpp
     display.cpp
     touch.cpp
     backlight.cpp

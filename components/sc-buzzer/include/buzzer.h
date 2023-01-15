@@ -17,6 +17,7 @@ class Buzzer {
   void playOtaStart();
   void playOtaFailed();
   void playOtaDownloading();
+  void swipeDetectedTone();
 };
 
 extern Buzzer buzzer;

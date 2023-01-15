@@ -1,13 +1,15 @@
 
 if(CONFIG_HAS_INTERNAL_SENSOR OR CONFIG_HAS_EXTERNALE_SENSOR)
+  set(SENSORS_SRCS sensors.cpp)
+endif()
+
 idf_component_register(
   SRCS
-    sensors.cpp
+    ${SENSORS_SRCS}
   INCLUDE_DIRS
     "include"
   REQUIRES
-    wc-bme280
-    wc-bme680
+    sc-bme280
+    sc-bme680
   )
-endif()
 
