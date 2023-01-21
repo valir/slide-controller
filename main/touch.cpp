@@ -206,6 +206,7 @@ void setDisplayBacklight(bool);
 
 void touchScreenTask(void*)
 {
+  vTaskDelay(pdMS_TO_TICKS(3 * 1000)); // allow for other tasks init
   if (!ts.begin(displayTaskHandle, DISPLAY_NOTIFY_TOUCH)) {
     ESP_LOGE(TAG, "Cannot setup touchscreen");
     vTaskDelete(NULL);

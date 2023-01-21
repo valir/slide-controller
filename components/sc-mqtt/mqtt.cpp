@@ -1,6 +1,7 @@
 
 #include "mqtt.h"
 #include "buzzer.h"
+#include "backlight.h"
 #include <cstdio>
 #include <esp_err.h>
 #include <esp_event.h>
@@ -32,6 +33,7 @@ extern TaskHandle_t mqttTaskHandle;
 #define MQTT_TOPIC_EXT_CALIBRATE "cmd/" CONFIG_HOSTNAME "/ext_calibrate"
 #define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
 #define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
+#define MQTT_TOPIC_SCREEN "cmd/" CONFIG_HOSTNAME "/screen"
 
 class MqttEventObserver : public EventObserver {
   virtual void notice(const Event&) override;
@@ -131,12 +133,19 @@ void handleOtaCmd(const char* data, int data_len)
 
 void handleSound(const char* data, int data_len)
 {
+  ESP_LOGI(TAG, "handleSound %*s", data_len, data);
   if (strncasecmp(data, "alert on", 8) == 0) {
+    BackLight::turnOn();
     buzzer.startAlert();
   } else if (strncasecmp(data, "alert off", 9) == 0) {
     buzzer.stopAlert();
   } else if (strncasecmp(data, "doorbell", 8) == 0) {
     buzzer.doorbell();
+  } else if (strncasecmp(data, "warning on", 10) == 0) {
+    BackLight::turnOn();
+    buzzer.startWarning();
+  } else if (strncasecmp(data, "warning off", 11) == 0) {
+    buzzer.stopWarning();
   }
 }
 

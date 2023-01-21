@@ -5,7 +5,6 @@ idf_component_register(
     # rs485.cpp
     display.cpp
     touch.cpp
-    backlight.cpp
     wifi.cpp
     # modbus.cpp
     statusbar.cpp

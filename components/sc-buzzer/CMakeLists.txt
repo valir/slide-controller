@@ -4,5 +4,5 @@ idf_component_register(
     buzzer.cpp
   INCLUDE_DIRS
     "include"
-  REQUIRES arduino
+  REQUIRES arduino sc-backlight
   )

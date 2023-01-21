@@ -99,7 +99,6 @@ void wifiTask(void*)
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
-  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
   ESP_LOGI(TAG, "wifi_init_sta finished.");
 
   for (bool isSane = true; isSane;) {
@@ -117,7 +116,7 @@ void wifiTask(void*)
 
       static bool need_sntp_init = true;
       if (need_sntp_init) {
-        const char* TZ_VAR =  "EET-2EEST,M3.5.0,M10.5.0";
+        const char* TZ_VAR = "EET-2EEST,M3.5.0,M10.5.0";
         setenv("TZ", TZ_VAR, 1);
         tzset();
         sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -131,6 +130,7 @@ void wifiTask(void*)
         }
       }
 
+      ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
       if (NULL == eventsTaskHandle) {
         xTaskCreatePinnedToCore(
             eventsTask, "eventsTask", 8192, NULL, 1, &eventsTaskHandle, 1);

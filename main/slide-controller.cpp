@@ -57,11 +57,12 @@ extern "C" void app_main() {
   ESP_ERROR_CHECK( esp_pm_configure(&pm_config) );
 
   ESP_LOGI(TAG, "Starting tasks...");
-  xTaskCreatePinnedToCore(displayTask, "displayTask", 12288, NULL, 1, &displayTaskHandle, 1);
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 8192, NULL, 1, &wifiTaskHandle, 0);
+  vTaskDelay(pdMS_TO_TICKS(1 * 1000));
+  xTaskCreatePinnedToCore(displayTask, "displayTask", 12288, NULL, 2, &displayTaskHandle, 1);
 
 #if defined(CONFIG_HAS_EXTERNAL_SENSOR) || defined(CONFIG_HAS_INTERNAL_SENSOR)
-  xTaskCreatePinnedToCore(sensors_task, "sensorsTask", 8192, NULL, 2, &sensorsTaskHandle, 1);
+  xTaskCreatePinnedToCore(sensors_task, "sensorsTask", 8192, NULL, 3, &sensorsTaskHandle, 1);
 #endif
   xTaskCreatePinnedToCore(touchScreenTask, "touchTask", 8192, NULL, 1, &touchScreenTaskHandle, 1);
   // xTaskCreateUniversal(rs485_task, "rs485Task", 4096, NULL, 1, &rs485TaskHandle, 0);
