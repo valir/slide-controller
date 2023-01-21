@@ -46,14 +46,18 @@ StatusBar::StatusBar(lv_obj_t* parent)
 int8_t getWifiQuality()
 {
   wifi_ap_record_t ap_info;
-  ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
+  auto rc = esp_wifi_sta_get_ap_info(&ap_info);
   auto dbm = ap_info.rssi;
-  if (dbm <= -100) {
-    return 0;
-  } else if (dbm >= -50) {
-    return 100;
+  if (ESP_OK == rc) {
+    if (dbm <= -100) {
+      return 0;
+    } else if (dbm >= -50) {
+      return 100;
+    } else {
+      return 2 * (dbm + 100);
+    }
   } else {
-    return 2 * (dbm + 100);
+    return 0;
   }
 }
 
@@ -65,8 +69,13 @@ void StatusBar::update()
   lv_label_set_text_fmt(
       time_label, "%2d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
 
-  lv_label_set_text_fmt(
-      status_label, LV_SYMBOL_WIFI " %d%% ", getWifiQuality());
+  auto wifi_qual = getWifiQuality();
+  if (wifi_qual)
+    lv_label_set_text_fmt(
+        status_label, LV_SYMBOL_WIFI " %d%% ", wifi_qual);
+  else
+    lv_label_set_text(
+        status_label, LV_SYMBOL_WIFI " ? " );
 
   if (firstUpdate) {
     lv_obj_clear_flag(time_label, LV_OBJ_FLAG_HIDDEN);

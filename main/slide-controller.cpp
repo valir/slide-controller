@@ -4,6 +4,7 @@
 #include <esp_task_wdt.h>
 #include <esp_freertos_hooks.h>
 #include <esp_log.h>
+#include <esp_pm.h>
 #include <nvs_flash.h>
 #include <esp32-hal-gpio.h>
 #include <SPI.h>
@@ -47,6 +48,13 @@ extern "C" void app_main() {
   // if (ESP_OK != err) {
   //   printf("Error registering idle hook %d", err);
   // }
+
+  esp_pm_config_esp32_t pm_config = {
+    .max_freq_mhz = 240,
+    .min_freq_mhz = 80,
+    .light_sleep_enable = true
+  };
+  ESP_ERROR_CHECK( esp_pm_configure(&pm_config) );
 
   ESP_LOGI(TAG, "Starting tasks...");
   xTaskCreatePinnedToCore(displayTask, "displayTask", 12288, NULL, 1, &displayTaskHandle, 1);

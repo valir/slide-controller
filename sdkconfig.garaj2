@@ -140,8 +140,6 @@ CONFIG_HOSTNAME="baie"
 # CONFIG_HAS_EXTERNAL_SENSOR is not set
 # end of Wall Controller configuration
 
-CONFIG_HAS_NO_SENSOR=y
-
 #
 # Arduino Configuration
 #

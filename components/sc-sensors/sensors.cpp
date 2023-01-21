@@ -124,7 +124,7 @@ template <class S, class E> class sensor_wrapper : public E {
   static void sensors_timer(void*)
   {
     static uint8_t heartbeat_counter = 0;
-    if ((heartbeat_counter++ % 3) == 0) {
+    if ((heartbeat_counter++ % 60) == 0) {
       heartbeat();
     }
 

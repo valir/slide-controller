@@ -4,7 +4,9 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
+#include <freertos/semphr.h>
 #include <list>
+#include <math.h>
 #include <string.h>
 #include <string>
 
@@ -26,13 +28,17 @@ Events::~Events() { vQueueDelete(event_queue); }
 template <typename T> struct ReduceEventsFrequency {
   T last_x;
   uint8_t count = 0;
-  ReduceEventsFrequency(T zero = 0)
+  T round_factor = 1.0;
+  ReduceEventsFrequency(T roundFactor = 0.1, T zero = 0)
       : last_x(zero)
   {
+    round_factor = 1 / round_factor;
   }
   bool skipEvent(T x)
   {
-    if (last_x != x || count++ > 6) {
+    if (round(round_factor * last_x) / round_factor
+            != round(round_factor * x) / round_factor
+        || count++ > 6) {
       count = 0;
       last_x = x;
       return false;
@@ -137,10 +143,23 @@ void Events::postEvent(const Event& theEvent)
 }
 
 static std::list<EventObserver*> observers;
+static SemaphoreHandle_t observersLock = NULL;
 
 void Events::registerObserver(EventObserver* observer)
 {
+  if (NULL == observersLock) {
+    observersLock = xSemaphoreCreateMutex();
+  }
+  xSemaphoreTake(observersLock, portMAX_DELAY);
   observers.push_back(observer);
+  xSemaphoreGive(observersLock);
+}
+
+void Events::unregisterObserver(EventObserver* observer)
+{
+  xSemaphoreTake(observersLock, portMAX_DELAY);
+  observers.remove(observer);
+  xSemaphoreGive(observersLock);
 }
 
 void eventsTask(void*)
@@ -159,6 +178,13 @@ void eventsTask(void*)
               assert(0);
             }
           });
+#if 0
+      if (event.event == EVENT_HEARTBEAT) {
+        ESP_LOGI(TAG, "heap: %d, min free: %d",
+            heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
+            heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT));
+      }
+#endif
     }
   }
 

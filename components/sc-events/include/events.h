@@ -81,6 +81,7 @@ class Events {
   void postOtaDoneOk();
   void postOtaDoneFail();
   void registerObserver(EventObserver*);
+  void unregisterObserver(EventObserver*);
 
   private:
   void postEvent(const Event& theEvent);

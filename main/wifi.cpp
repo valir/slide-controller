@@ -34,11 +34,13 @@ TaskHandle_t eventsTaskHandle = NULL;
 void mqttTask(void*);
 void eventsTask(void*);
 static int s_retry_num = 0;
+bool wifi_connected = false;
 
 static void event_handler(void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data)
 {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+    ESP_LOGI(TAG, "EVENT_STA_START");
     esp_wifi_connect();
   } else if (event_base == WIFI_EVENT
       && event_id == WIFI_EVENT_STA_DISCONNECTED) {
@@ -48,8 +50,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
       ESP_LOGI(TAG, "retry to connect to the AP");
     } else {
       xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+      ESP_LOGI(TAG, "connect to the AP fail");
     }
-    ESP_LOGI(TAG, "connect to the AP fail");
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
     ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
@@ -58,9 +60,10 @@ static void event_handler(void* arg, esp_event_base_t event_base,
   }
 }
 
-void time_sync_notification_cb(struct timeval*)
+void time_sync_notification_cb(struct timeval* tv)
 {
-  ESP_LOGI(TAG, "time_sync_notification");
+  auto tm = localtime(&tv->tv_sec);
+  ESP_LOGI(TAG, "time_sync_notificationi %s", asctime(tm));
 }
 
 void wifiTask(void*)
@@ -83,6 +86,7 @@ void wifiTask(void*)
   ESP_ERROR_CHECK(esp_event_handler_instance_register(
       IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, &instance_got_ip));
 
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
   wifi_config_t wifi_config;
   // not using aggregate initializer because of this
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55227
@@ -135,14 +139,21 @@ void wifiTask(void*)
         xTaskCreatePinnedToCore(
             mqttTask, "mqttTask", 8192, NULL, 1, &mqttTaskHandle, 0);
       }
+      wifi_connected = true;
     } else if (bits & WIFI_FAIL_BIT) {
       ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
           CONFIG_WIFI_SSID, CONFIG_WIFI_PASS);
       ESP_LOGI(TAG, "wifi stopped");
+      wifi_connected = false;
+      vTaskDelay(pdMS_TO_TICKS(60 * 1000));
+      ESP_LOGI(TAG, "Attempting new wifi start");
+      s_retry_num = 0;
+      ESP_ERROR_CHECK(esp_wifi_connect());
     } else {
       ESP_LOGE(TAG, "UNEXPECTED EVENT");
       isSane = false;
-      break; // exit task - this will require device reset
+      wifi_connected = false;
+      esp_restart();
     }
   }
   ESP_ERROR_CHECK(esp_wifi_stop());

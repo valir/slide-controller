@@ -20,9 +20,11 @@
 #include <events.h>
 
 extern TaskHandle_t otaTaskHandle;
+extern bool wifi_connected;
 void otaTask(void*);
 
 static const char* TAG = "MQTT";
+extern TaskHandle_t mqttTaskHandle;
 #define MQTT_TOPIC_NIGHT_MODE "cmd/barlog/night_mode"
 #define MQTT_TOPIC_LIGHTS "cmd/" CONFIG_HOSTNAME "/lights"
 #define MQTT_TOPIC_POLL_NIGHT_MODE "state/barlog/night_mode"
@@ -156,30 +158,43 @@ struct MqttSubscription mqttSubscriptions[] = {
 static const char* CONFIG_BROKER_URL = "mqtt://bb-master";
 #define MQTT_PREFIX "barlog/" CONFIG_HOSTNAME
 static esp_mqtt_client_handle_t client;
+bool mqtt_connected = false;
 
 #ifndef CONFIG_HAS_INTERNAL_SENSOR
+static esp_timer_handle_t heartbeat_timer;
 static void postHeartbeatEvent(void*) { events.postHeartbeatEvent(); }
 #endif
 
+static bool needSubscribe = true;
 static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
 {
-  MqttSubscription* subscription = &mqttSubscriptions[0];
-  while (subscription->TOPIC) {
-    subscription->subscribe(client);
-    subscription++;
+  if (needSubscribe) {
+    MqttSubscription* subscription = &mqttSubscriptions[0];
+    while (subscription->TOPIC) {
+      subscription->subscribe(client);
+      subscription++;
+    }
+    needSubscribe = false;
   }
 #ifndef CONFIG_HAS_INTERNAL_SENSOR
   esp_timer_create_args_t timer_args = { .callback = postHeartbeatEvent,
     .arg = nullptr,
     .dispatch_method = ESP_TIMER_TASK,
     .skip_unhandled_events = 1 };
-  esp_timer_handle_t timer_handle;
-  ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, 10 * 1000 * 1000));
+  ESP_ERROR_CHECK(esp_timer_create(&timer_args, &heartbeat_timer));
+  ESP_ERROR_CHECK(
+      esp_timer_start_periodic(heartbeat_timer, 60 * 1000 * 1000));
 #endif
 }
 
-bool mqtt_connected = false;
+static void onMqttDisconnectedEvent()
+{
+  mqtt_connected = false;
+  xTaskNotify(mqttTaskHandle, 0x1, eSetBits);
+#ifndef CONFIG_HAS_INTERNAL_SENSOR
+  esp_timer_stop(heartbeat_timer);
+#endif
+}
 
 static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
     int32_t event_id, void* event_data)
@@ -192,13 +207,13 @@ static void mqtt_event_handler(void* handler_args, esp_event_base_t base,
   int msg_id;
   switch ((esp_mqtt_event_id_t)event_id) {
   case MQTT_EVENT_CONNECTED:
-    ESP_LOGD(TAG, "MQTT_EVENT_CONNECTED");
+    ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
     mqtt_connected = true;
     onMqttConnectedEvent(client);
     break;
   case MQTT_EVENT_DISCONNECTED:
-    ESP_LOGD(TAG, "MQTT_EVENT_DISCONNECTED");
-    mqtt_connected = false;
+    ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+    onMqttDisconnectedEvent();
     break;
 
   case MQTT_EVENT_SUBSCRIBED:
@@ -326,9 +341,11 @@ void MqttEventObserver::notice(const Event& event)
   } else {
     // finally, post the event
     const char* eventData = constData ? constData : data;
-    static char* topic;
+    static char* topic = NULL;
     constexpr size_t TOPIC_LEN = 80;
-    topic = (char*)malloc(TOPIC_LEN);
+    if (topic == NULL) {
+      topic = (char*)malloc(TOPIC_LEN);
+    }
     snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", eventName);
     ESP_LOGI(TAG, "%s %s", topic, eventData);
     esp_mqtt_client_publish(
@@ -336,25 +353,34 @@ void MqttEventObserver::notice(const Event& event)
   }
 }
 
-void mqttTask(void*)
+void mqttTask(void* h)
 {
+  ESP_LOGI(TAG, "Starting up");
   esp_mqtt_client_config_t mqtt_cfg = {
     .uri = CONFIG_BROKER_URL,
   };
-  client = esp_mqtt_client_init(&mqtt_cfg);
-  esp_mqtt_client_register_event(client,
-      (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
-  ESP_ERROR_CHECK(esp_mqtt_client_start(client));
 
+  needSubscribe = true;
   static MqttEventObserver observer;
   events.registerObserver(&observer);
 
-  while (true) {
-    vTaskDelay(pdMS_TO_TICKS(10000));
-    if (!mqtt_connected) {
-      esp_mqtt_client_reconnect(client);
+  client = esp_mqtt_client_init(&mqtt_cfg);
+  esp_mqtt_client_register_event(client,
+      (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+  esp_mqtt_client_start(client);
+
+  uint32_t bits;
+  while (
+      pdTRUE == xTaskNotifyWait(ULONG_MAX, ULONG_MAX, &bits, portMAX_DELAY)) {
+    if (!wifi_connected) {
+      break; // terminate this task so it will be recreated when wifi is back
     }
   }
 
+  ESP_LOGI(TAG, "Terminating task.");
+  esp_mqtt_client_stop(client);
+  esp_mqtt_client_destroy(client);
+  events.unregisterObserver(&observer);
+  mqttTaskHandle = NULL;
   vTaskDelete(nullptr);
 }
