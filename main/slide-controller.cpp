@@ -49,12 +49,14 @@ extern "C" void app_main() {
   //   printf("Error registering idle hook %d", err);
   // }
 
+#if PM_ENABLE
   esp_pm_config_esp32_t pm_config = {
     .max_freq_mhz = 240,
     .min_freq_mhz = 80,
     .light_sleep_enable = true
   };
   ESP_ERROR_CHECK( esp_pm_configure(&pm_config) );
+#endif
 
   ESP_LOGI(TAG, "Starting tasks...");
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 8192, NULL, 1, &wifiTaskHandle, 0);

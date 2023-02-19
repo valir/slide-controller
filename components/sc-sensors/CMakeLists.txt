@@ -11,5 +11,6 @@ idf_component_register(
   REQUIRES
     sc-bme280
     sc-bme680
+    esp32DHT
   )
 

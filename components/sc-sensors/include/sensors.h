@@ -26,6 +26,11 @@ class Sensors_Info {
   public:
   void set_ext_temperature(float t);
   void set_ext_humidity(float h);
+  void set_ext_cal_values(float t, float h)
+  {
+    cal_ext_temperature = t;
+    cal_ext_humidity = h;
+  }
 #endif
   protected:
   friend class bme280Sensor;

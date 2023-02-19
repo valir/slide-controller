@@ -1,6 +1,7 @@
 #include <driver/gpio.h>
 #include <driver/i2c.h>
 #include <esp_log.h>
+#include <esp_pm.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -22,7 +23,7 @@
 #include "events.h"
 #include "sensors.h"
 
-#if (CONFIG_HAS_EXTERNAL_SENSOR == 1)
+#if CONFIG_HAS_EXTERNAL_SENSOR
 #include <esp32DHT.h>
 #define PIN_NUM_DHT GPIO_NUM_32
 #endif
@@ -86,8 +87,9 @@ class ext_sensor_wrapper {
   {
     static uint8_t counter = 0;
     constexpr uint8_t DHT_FREQUENCY = 16;
-    if ((counter++ % DHT_FREQUENCY) == 0)
+    if ((counter++ % DHT_FREQUENCY) == 0) {
       _ext_sensor.read();
+    }
   }
 
   protected:
@@ -95,8 +97,6 @@ class ext_sensor_wrapper {
   {
     sensors_info.set_ext_temperature(t);
     sensors_info.set_ext_humidity(h);
-    events.postExtTemperatureEvent(sensors_info.ext_temperature);
-    events.postExtHumidityEvent(sensors_info.ext_humidity);
   }
   static void ext_sensor_err(uint8_t err)
   {
