@@ -11,6 +11,7 @@ idf_component_register(
     mainpanel.cpp
     gui/lightbulb.c
     gui/lightbulb_outline.c
+    gui/monofur.c
   INCLUDE_DIRS "."
   )
 
