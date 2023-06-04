@@ -35,6 +35,7 @@ extern TaskHandle_t mqttTaskHandle;
 #define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
 #define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
 #define MQTT_TOPIC_DISPLAY "cmd/" CONFIG_HOSTNAME "/display"
+#define MQTT_TOPIC_CONTROL "cmd/" CONFIG_HOSTNAME "/control"
 #define MQTT_TOPIC_AIR_QUALITY "state/" CONFIG_HOSTNAME "/air_quality"
 
 class MqttEventObserver : public EventObserver {
@@ -143,7 +144,7 @@ void handleOtaCmd(const char* data, int data_len)
   constexpr size_t CMD_LENGTH = 8;
   const char* STR_CMD_START = "start";
   char cmd[CMD_LENGTH + 1];
-  sscanf(data, "%8s", cmd);
+  sscanf(data, "%7s", cmd);
   if (strncasecmp(cmd, STR_CMD_START, CMD_LENGTH) == 0) {
     xTaskCreate(&otaTask, "otaTask", 8192, NULL, 3, &otaTaskHandle);
   }
@@ -183,8 +184,17 @@ void handleDisplay(const char* data, int data_len)
   ESP_LOGE(TAG, "handleDisplay received unknown parameter %.*s", data_len, data);
 }
 
+void handleControl(const char* data, int data_len)
+{
+  if (strncasecmp(data, "reboot", data_len) == 0) {
+    ESP_LOGI(TAG, "Rebooting");
+    esp_restart();
+  }
+}
+
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 struct MqttSubscription mqttSubscriptions[] = {
+  { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
   { .TOPIC = MQTT_TOPIC_LIGHTS, .qos = 1 },
   { .TOPIC = MQTT_TOPIC_SOUND, .qos = 1, .func = handleSound },
@@ -194,11 +204,11 @@ struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_AIR_QUALITY, .qos = 1, .func = handleAirQuality },
 #endif
 #endif
-  { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
 #if CONFIG_HAS_EXTERNAL_SENSOR
   { .TOPIC = MQTT_TOPIC_EXT_CALIBRATE, .qos = 1, .func = handleExtCalibrate },
 #endif
   { .TOPIC = MQTT_TOPIC_DISPLAY, .qos = 1, .func = handleDisplay },
+  { .TOPIC = MQTT_TOPIC_CONTROL, .qos = 1, .func = handleControl},
   { .TOPIC = nullptr }
 };
 
