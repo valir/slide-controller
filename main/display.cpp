@@ -29,7 +29,6 @@ constexpr int SCREEN_HEIGHT = 320;
 constexpr int BITS_PER_PIXEL = 16; // this must be in sync with LV_COLOR_DEPTH
 constexpr size_t BUFFER_SIZE
     = SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(lv_color_t) / 4;
-static bool backlightIsOn = false;
 
 ILI9341_SPI lcd = ILI9341_SPI(LCD_CS, LCD_DC, LCD_RST);
 #define LV_TICK_PERIOD_MS 10
