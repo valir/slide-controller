@@ -1,9 +1,9 @@
 
 
 #include "backlight.h"
+#include "buzzer.h"
 #include "display.h"
 #include "events.h"
-#include "buzzer.h"
 #include <XPT2046_Touchscreen.h>
 #include <algorithm>
 #include <driver/timer.h>
@@ -117,12 +117,14 @@ struct GestureDetector {
 
   TouchGesture getGesture() const
   {
+    std::for_each(_maybe_gestures.begin(), _maybe_gestures.end(),
+        [](TouchGesture g) { ESP_LOGI(TAG, "Gesture %d", g); });
     auto analyzer = std::for_each(
         _maybe_gestures.begin(), _maybe_gestures.end(), GestureAnalyzer());
     return analyzer.getGesture();
   }
-  static constexpr auto THRESHOLD_X = 10;
-  static constexpr auto THRESHOLD_Y = 10;
+  static constexpr auto THRESHOLD_X = 8; // screen is landscape
+  static constexpr auto THRESHOLD_Y = 5;
   bool _at_start { true };
   TS_Point _prev;
   std::vector<TouchGesture> _maybe_gestures;
@@ -137,6 +139,12 @@ void detectGesture()
     ESP_LOGI(TAG, "Detected gesture %d", gesture);
     xTaskNotify(touchScreenTaskHandle, TOUCH_GESTURE_BIT | gesture, eSetBits);
     buzzer.swipeDetectedTone();
+    if (gesture > TOUCH_GESTURE_LONG_PRESS) {
+      vTaskDelay(pdMS_TO_TICKS(40)); // debounce the touch gesture
+      buzzer.swipeDetectedTone();
+    }
+    std::for_each(touchedPoints.begin(), touchedPoints.end(),
+        [](const TS_Point& p) { ESP_LOGI(TAG, "Point %d, %d", p.x, p.y); });
   }
   touchedPoints.clear();
 }
@@ -173,29 +181,34 @@ TS_Point getTouchPoint()
 
 void touch_screen_input(lv_indev_drv_t* drv, lv_indev_data_t* data)
 {
+  static bool debounced_touch = false;
   if (ts.tirqTouched()) {
     if (ts.touched()) {
-      vTaskDelay(pdMS_TO_TICKS(30)); // debounce the touch gesture
-      if (ts.touched()) {
-        resetTouchTimer();
-        auto p = getTouchPoint();
-        touchedPoints.push_back(p);
-        // ESP_LOGI(TAG, "Touched at %d,%d with pressure %d", p.x, p.y, p.z);
-        if (!screen_is_being_touched) {
-          screen_is_being_touched
-              = true; // avoid sending multiple touched events
-          oldPoint = p;
-          data->state = LV_INDEV_STATE_PR;
-          data->point.x = p.x;
-          data->point.y = p.y;
-
-          xTaskNotify(touchScreenTaskHandle, TOUCH_ON, eSetBits);
-          return;
+      if (!debounced_touch) {
+        vTaskDelay(pdMS_TO_TICKS(30)); // debounce the touch gesture
+        if (ts.touched()) {
+          debounced_touch = true;
         }
+      }
+      resetTouchTimer();
+      auto p = getTouchPoint();
+      touchedPoints.push_back(p);
+      // ESP_LOGI(TAG, "Touched at %d,%d with pressure %d", p.x, p.y, p.z);
+      if (!screen_is_being_touched) {
+        screen_is_being_touched
+            = true; // avoid sending multiple TOUCH_ON events
+        oldPoint = p;
+        data->state = LV_INDEV_STATE_PR;
+        data->point.x = p.x;
+        data->point.y = p.y;
+
+        xTaskNotify(touchScreenTaskHandle, TOUCH_ON, eSetBits);
+        return;
       }
     }
   }
 
+  debounced_touch = false;
   data->state = LV_INDEV_STATE_REL;
   data->point.x = oldPoint.x;
   data->point.y = oldPoint.y;
