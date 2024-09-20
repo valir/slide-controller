@@ -4,9 +4,11 @@ cmake_minimum_required(VERSION 3.5)
 
 file(STRINGS "version.txt" PROJECT_VER)
 
+if(EXISTS "$ENV{SC_CONFIG_DIR}/sdkconfig.common")
 set(SDKCONFIG_DEFAULTS
-  "sdkconfig.common;sdkconfig.wifi;sdkconfig.$ENV{SC_HOSTNAME}")
-set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+  "../sdkconfig.common;../sdkconfig.wifi;../sdkconfig.$ENV{SC_HOSTNAME}")
+  set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 

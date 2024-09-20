@@ -1,7 +1,7 @@
 
 #include "mqtt.h"
-#include "buzzer.h"
 #include "backlight.h"
+#include "buzzer.h"
 #include <cstdio>
 #include <esp_err.h>
 #include <esp_event.h>
@@ -33,7 +33,7 @@ extern TaskHandle_t mqttTaskHandle;
 #define MQTT_TOPIC_EXT_CALIBRATE "cmd/" CONFIG_HOSTNAME "/ext_calibrate"
 #define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
 #define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
-#define MQTT_TOPIC_SCREEN "cmd/" CONFIG_HOSTNAME "/screen"
+#define MQTT_TOPIC_DISPLAY "cmd/" CONFIG_HOSTNAME "/display"
 
 class MqttEventObserver : public EventObserver {
   virtual void notice(const Event&) override;
@@ -108,13 +108,13 @@ void handleExtCalibrate(const char* data, int data_len)
     ESP_LOGE(TAG, "handleExtCalibrate: incorrect data received");
     return;
   }
-  if (2
-      != sscanf(data, "%f %f", &sensors_info.cal_ext_temperature,
-          &sensors_info.cal_ext_humidity)) {
+  float cal_temperature, cal_rel_humidity;
+  if (2 != sscanf(data, "%f %f", &cal_temperature, &cal_rel_humidity)) {
     ESP_LOGE(
         TAG, "handleExtCalibrate: incorrect params %.*s", data_len, data);
   } else {
     ESP_LOGI(TAG, "handleExtCalibrate: accepted %.*s", data_len, data);
+    sensors_info.set_ext_cal_values(cal_temperature, cal_rel_humidity);
     buzzer.ackTone();
   }
 }
@@ -149,6 +149,22 @@ void handleSound(const char* data, int data_len)
   }
 }
 
+// handle the display mqtt event; when payload is "on" or "off" turn the
+// display on or off. However, if the display is turned on, then a timer will
+// be set to turn it off after a while.
+void handleDisplay(const char* data, int data_len)
+{
+  if (strncasecmp(data, "on", data_len) == 0) {
+    BackLight::turnOn();
+    return;
+  }
+  if (strncasecmp(data, "off", data_len) == 0) {
+    BackLight::turnOff();
+    return;
+  }
+  ESP_LOGE(TAG, "handleDisplay received unknown parameter %.*s", data_len, data);
+}
+
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_NIGHT_MODE, .qos = 0, .func = handleNightMode },
@@ -161,6 +177,7 @@ struct MqttSubscription mqttSubscriptions[] = {
 #if CONFIG_HAS_EXTERNAL_SENSOR
   { .TOPIC = MQTT_TOPIC_EXT_CALIBRATE, .qos = 1, .func = handleExtCalibrate },
 #endif
+  { .TOPIC = MQTT_TOPIC_DISPLAY, .qos = 1, .func = handleDisplay },
   { .TOPIC = nullptr }
 };
 
