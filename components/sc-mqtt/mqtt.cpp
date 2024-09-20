@@ -247,6 +247,7 @@ static void onMqttConnectedEvent(esp_mqtt_client_handle_t client)
 static void onMqttDisconnectedEvent()
 {
   mqtt_connected = false;
+  needSubscribe = true;
   xTaskNotify(mqttTaskHandle, 0x1, eSetBits);
 #ifndef CONFIG_HAS_INTERNAL_SENSOR
   esp_timer_stop(heartbeat_timer);
