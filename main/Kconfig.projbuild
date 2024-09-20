@@ -5,6 +5,10 @@ config HOSTNAME
   string "Host Name"
   default "test"
 
+config USE_ALTERNATE_GUI
+  bool "Use alternate GUI"
+  default n
+
 config WIFI_SSID
   string "WiFi SSID"
 
