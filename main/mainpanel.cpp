@@ -273,6 +273,9 @@ void create_light_bulb(lv_obj_t* parent)
 MainPanel::MainPanel(lv_obj_t* parent)
 {
 #if CONFIG_USE_SENSOR_BME680
+#if CONFIG_USE_ALTERNATE_GUI
+#error "Alternate GUI not supported with BME680 sensor"
+#else
   // |      | CO2 |
   // | TEMP | RH  |
   // |      | IAQ |
@@ -280,7 +283,7 @@ MainPanel::MainPanel(lv_obj_t* parent)
   create_co2_panel(parent, 2 * 320 / 3, 16, 320 / 3, 70);
   create_humidity_panel(parent, 2 * 320 / 3, 86, 320 / 3, 70);
   create_iaq_panel(parent, 2 * 320 / 3, 156, 320 / 3, 70);
-
+#endif // CONFIG_USE_ALTERNATE_GUI
 #elif CONFIG_HAS_EXTERNAL_SENSOR
   // |      | EXT_TEMP |
   // | TEMP | RH       |
