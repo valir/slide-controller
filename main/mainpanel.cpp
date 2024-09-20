@@ -15,6 +15,10 @@ static lv_obj_t* humidity_panel = nullptr;
 static lv_obj_t* humidity_label = nullptr;
 static lv_obj_t* iaq_panel = nullptr;
 static lv_obj_t* iaq_label = nullptr;
+static lv_obj_t* ext_temp_panel = nullptr;
+static lv_obj_t* ext_temp_label = nullptr;
+static lv_obj_t* ext_humidity_panel = nullptr;
+static lv_obj_t* ext_humidity_label = nullptr;
 
 LV_FONT_DECLARE(monofur);
 
@@ -42,6 +46,30 @@ void create_temp_panel(lv_obj_t* parent, int x, int y, int w, int h)
   lv_obj_add_flag(temp_panel, LV_OBJ_FLAG_HIDDEN);
 }
 
+void create_ext_temp_panel(lv_obj_t* parent, int x, int y, int w, int h)
+{
+  static lv_style_t style;
+  lv_style_init(&style);
+  // lv_style_set_bg_color(&style, lv_palette_main(LV_PALETTE_BLUE));
+  lv_style_set_bg_opa(&style, LV_OPA_TRANSP);
+  lv_style_set_radius(&style, 0);
+  lv_style_set_border_width(&style, 0);
+  lv_style_set_pad_all(&style, 0);
+  lv_style_set_text_font(&style, &lv_font_montserrat_32);
+  lv_style_set_text_color(&style, lv_palette_darken(LV_PALETTE_AMBER, 4));
+
+  ext_temp_panel = lv_obj_create(parent);
+  lv_obj_add_style(ext_temp_panel, &style, 0);
+  lv_obj_set_size(ext_temp_panel, w, h);
+  lv_obj_align(ext_temp_panel, LV_ALIGN_TOP_LEFT, x, y);
+
+  ext_temp_label = lv_label_create(ext_temp_panel);
+  lv_label_set_text(ext_temp_label, "?");
+  lv_obj_align(ext_temp_label, LV_ALIGN_CENTER, 0, 0);
+
+  lv_obj_add_flag(ext_temp_panel, LV_OBJ_FLAG_HIDDEN);
+}
+
 static lv_style_t co2_base_style;
 static lv_style_t co2_warn_style;
 static lv_style_t co2_high_style;
@@ -49,7 +77,8 @@ static lv_style_t co2_normal_style;
 void create_co2_panel(lv_obj_t* parent, int x, int y, int w, int h)
 {
   lv_style_init(&co2_base_style);
-  // lv_style_set_bg_color(&co2_base_style, lv_palette_main(LV_PALETTE_GREEN));
+  // lv_style_set_bg_color(&co2_base_style,
+  // lv_palette_main(LV_PALETTE_GREEN));
   lv_style_set_bg_opa(&co2_base_style, LV_OPA_TRANSP);
   lv_style_set_radius(&co2_base_style, 0);
   lv_style_set_border_width(&co2_base_style, 0);
@@ -62,17 +91,22 @@ void create_co2_panel(lv_obj_t* parent, int x, int y, int w, int h)
   lv_obj_align(co2_panel, LV_ALIGN_TOP_LEFT, x, y);
 
   lv_style_init(&co2_warn_style);
-  lv_style_set_bg_color(&co2_warn_style, lv_palette_lighten(LV_PALETTE_AMBER, 3));
-  lv_style_set_text_color(&co2_warn_style, lv_palette_darken(LV_PALETTE_AMBER, 2));
+  lv_style_set_bg_color(
+      &co2_warn_style, lv_palette_lighten(LV_PALETTE_AMBER, 3));
+  lv_style_set_text_color(
+      &co2_warn_style, lv_palette_darken(LV_PALETTE_AMBER, 2));
   lv_style_set_bg_opa(&co2_warn_style, LV_OPA_COVER);
 
   lv_style_init(&co2_high_style);
-  lv_style_set_bg_color(&co2_high_style, lv_palette_darken(LV_PALETTE_RED, 2));
-  lv_style_set_text_color(&co2_high_style, lv_palette_lighten(LV_PALETTE_RED, 2));
+  lv_style_set_bg_color(
+      &co2_high_style, lv_palette_darken(LV_PALETTE_RED, 2));
+  lv_style_set_text_color(
+      &co2_high_style, lv_palette_lighten(LV_PALETTE_RED, 2));
   lv_style_set_bg_opa(&co2_high_style, LV_OPA_COVER);
 
   lv_style_init(&co2_normal_style);
-  lv_style_set_text_color(&co2_normal_style, lv_palette_main(LV_PALETTE_GREEN));
+  lv_style_set_text_color(
+      &co2_normal_style, lv_palette_main(LV_PALETTE_GREEN));
   lv_style_set_bg_opa(&co2_normal_style, LV_OPA_TRANSP);
 
   co2_label = lv_label_create(co2_panel);
@@ -101,17 +135,22 @@ void create_humidity_panel(lv_obj_t* parent, int x, int y, int w, int h)
   lv_obj_align(humidity_panel, LV_ALIGN_TOP_LEFT, x, y);
 
   lv_style_init(&humidity_low_style);
-  lv_style_set_bg_color(&humidity_low_style, lv_palette_darken(LV_PALETTE_RED, 3));
-  lv_style_set_text_color(&humidity_low_style, lv_palette_lighten(LV_PALETTE_RED, 2));
+  lv_style_set_bg_color(
+      &humidity_low_style, lv_palette_darken(LV_PALETTE_RED, 3));
+  lv_style_set_text_color(
+      &humidity_low_style, lv_palette_lighten(LV_PALETTE_RED, 2));
   lv_style_set_bg_opa(&humidity_low_style, LV_OPA_COVER);
 
   lv_style_init(&humidity_high_style);
-  lv_style_set_bg_color(&humidity_low_style, lv_palette_darken(LV_PALETTE_RED, 3));
-  lv_style_set_text_color(&humidity_low_style, lv_palette_lighten(LV_PALETTE_RED, 2));
+  lv_style_set_bg_color(
+      &humidity_low_style, lv_palette_darken(LV_PALETTE_RED, 3));
+  lv_style_set_text_color(
+      &humidity_low_style, lv_palette_lighten(LV_PALETTE_RED, 2));
   lv_style_set_bg_opa(&humidity_high_style, LV_OPA_COVER);
 
   lv_style_init(&humidity_normal_style);
-  lv_style_set_text_color(&humidity_normal_style, lv_palette_main(LV_PALETTE_GREEN));
+  lv_style_set_text_color(
+      &humidity_normal_style, lv_palette_main(LV_PALETTE_GREEN));
   lv_style_set_bg_opa(&humidity_normal_style, LV_OPA_TRANSP);
 
   humidity_label = lv_label_create(humidity_panel);
@@ -119,6 +158,35 @@ void create_humidity_panel(lv_obj_t* parent, int x, int y, int w, int h)
   lv_obj_align(humidity_label, LV_ALIGN_CENTER, 0, 0);
 
   lv_obj_add_flag(humidity_panel, LV_OBJ_FLAG_HIDDEN);
+}
+
+static lv_style_t ext_humidity_base_style;
+static lv_style_t ext_humidity_normal_style;
+void create_ext_ext_humidity_panel(
+    lv_obj_t* parent, int x, int y, int w, int h)
+{
+  lv_style_init(&ext_humidity_base_style);
+  lv_style_set_bg_opa(&ext_humidity_base_style, LV_OPA_TRANSP);
+  lv_style_set_radius(&ext_humidity_base_style, 0);
+  lv_style_set_border_width(&ext_humidity_base_style, 0);
+  lv_style_set_pad_all(&ext_humidity_base_style, 0);
+  lv_style_set_text_font(&ext_humidity_base_style, &lv_font_montserrat_32);
+
+  ext_humidity_panel = lv_obj_create(parent);
+  lv_obj_add_style(ext_humidity_panel, &ext_humidity_base_style, 0);
+  lv_obj_set_size(ext_humidity_panel, w, h);
+  lv_obj_align(ext_humidity_panel, LV_ALIGN_TOP_LEFT, x, y);
+
+  lv_style_init(&ext_humidity_normal_style);
+  lv_style_set_text_color(
+      &ext_humidity_normal_style, lv_palette_main(LV_PALETTE_GREEN));
+  lv_style_set_bg_opa(&ext_humidity_normal_style, LV_OPA_TRANSP);
+
+  ext_humidity_label = lv_label_create(ext_humidity_panel);
+  lv_label_set_text(ext_humidity_label, "?");
+  lv_obj_align(ext_humidity_label, LV_ALIGN_CENTER, 0, 0);
+
+  lv_obj_add_flag(ext_humidity_panel, LV_OBJ_FLAG_HIDDEN);
 }
 
 static lv_style_t iaq_base_style;
@@ -145,13 +213,17 @@ void create_iaq_panel(lv_obj_t* parent, int x, int y, int w, int h)
   lv_style_set_bg_opa(&iaq_low_style, LV_OPA_TRANSP);
 
   lv_style_init(&iaq_high_style);
-  lv_style_set_bg_color(&iaq_high_style, lv_palette_darken(LV_PALETTE_RED,2));
-  lv_style_set_text_color(&iaq_high_style, lv_palette_lighten(LV_PALETTE_RED,3));
+  lv_style_set_bg_color(
+      &iaq_high_style, lv_palette_darken(LV_PALETTE_RED, 2));
+  lv_style_set_text_color(
+      &iaq_high_style, lv_palette_lighten(LV_PALETTE_RED, 3));
   lv_style_set_bg_opa(&iaq_high_style, LV_OPA_COVER);
 
   lv_style_init(&iaq_warn_style);
-  lv_style_set_bg_color(&iaq_warn_style, lv_palette_lighten(LV_PALETTE_AMBER, 3));
-  lv_style_set_text_color(&iaq_warn_style, lv_palette_darken(LV_PALETTE_AMBER, 2));
+  lv_style_set_bg_color(
+      &iaq_warn_style, lv_palette_lighten(LV_PALETTE_AMBER, 3));
+  lv_style_set_text_color(
+      &iaq_warn_style, lv_palette_darken(LV_PALETTE_AMBER, 2));
   lv_style_set_bg_opa(&iaq_warn_style, LV_OPA_COVER);
 
   iaq_label = lv_label_create(iaq_panel);
@@ -195,18 +267,28 @@ void create_light_bulb(lv_obj_t* parent)
   lv_obj_align(img_bulb, LV_ALIGN_CENTER, 0, -20);
   lv_obj_set_size(img_bulb, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
   lv_obj_add_flag(img_bulb, LV_OBJ_FLAG_HIDDEN);
-
 }
 
 // TODO configure which palette we should use in the menuconfig
 MainPanel::MainPanel(lv_obj_t* parent)
 {
-#if CONFIG_HAS_INTERNAL_SENSOR || CONFIG_HAS_EXTERNAL_SENSOR
-
+#if CONFIG_USE_SENSOR_BME680
+  // |      | CO2 |
+  // | TEMP | RH  |
+  // |      | IAQ |
   create_temp_panel(parent, 0, 16, 2 * 320 / 3, 208);
   create_co2_panel(parent, 2 * 320 / 3, 16, 320 / 3, 70);
   create_humidity_panel(parent, 2 * 320 / 3, 86, 320 / 3, 70);
   create_iaq_panel(parent, 2 * 320 / 3, 156, 320 / 3, 70);
+
+#elif CONFIG_HAS_EXTERNAL_SENSOR
+  // |      | EXT_TEMP |
+  // | TEMP | RH       |
+  // |      | EXT_RH   |
+  create_temp_panel(parent, 0, 16, 2 * 320 / 3, 208);
+  create_ext_temp_panel(parent, 2 * 320 / 3, 16, 320 / 3, 70);
+  create_humidity_panel(parent, 2 * 320 / 3, 86, 320 / 3, 70);
+  create_ext_ext_humidity_panel(parent, 2 * 320 / 3, 156, 320 / 3, 70);
 
 #else
 
@@ -240,6 +322,12 @@ void MainPanel::update()
     if (iaq_panel != nullptr) {
       lv_obj_clear_flag(iaq_panel, LV_OBJ_FLAG_HIDDEN);
     }
+    if (ext_temp_panel != nullptr) {
+      lv_obj_clear_flag(ext_temp_panel, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (ext_humidity_panel != nullptr) {
+      lv_obj_clear_flag(ext_humidity_panel, LV_OBJ_FLAG_HIDDEN);
+    }
 
     // trigger delayed backlight turn-off so device won't heat-up
     BackLight::activateTimer();
@@ -252,6 +340,15 @@ void MainPanel::setTemp(float temp)
     char buf[16];
     snprintf(buf, sizeof(buf), "%.1f", temp);
     lv_label_set_text(temp_label, buf);
+  }
+}
+
+void MainPanel::setExtTemp(float temp)
+{
+  if (ext_temp_label != nullptr) {
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.1f", temp);
+    lv_label_set_text(ext_temp_label, buf);
   }
 }
 
@@ -275,6 +372,15 @@ void MainPanel::setHumidity(float humidity)
   }
 }
 
+void MainPanel::setExtHumidity(float humidity)
+{
+  if (ext_humidity_label != nullptr) {
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.1f%%", humidity);
+    lv_label_set_text(ext_humidity_label, buf);
+  }
+}
+
 void MainPanel::setCO2(float co2)
 {
   if (co2_label != nullptr) {
@@ -285,7 +391,7 @@ void MainPanel::setCO2(float co2)
     lv_obj_remove_style(co2_panel, &co2_normal_style, 0);
     lv_obj_remove_style(co2_panel, &co2_warn_style, 0);
     lv_obj_remove_style(co2_panel, &co2_high_style, 0);
-    if (co2 < 1000) {
+    if (co2 < 800) {
       lv_obj_add_style(co2_panel, &co2_normal_style, 0);
     } else if (co2 > 1200) {
       lv_obj_add_style(co2_panel, &co2_high_style, 0);
@@ -305,9 +411,9 @@ void MainPanel::setIAQ(float iaq)
     lv_obj_remove_style(iaq_panel, &iaq_low_style, 0);
     lv_obj_remove_style(iaq_panel, &iaq_warn_style, 0);
     lv_obj_remove_style(iaq_panel, &iaq_high_style, 0);
-    if (iaq < 50) {
+    if (iaq < 100) {
       lv_obj_add_style(iaq_panel, &iaq_low_style, 0);
-    } else if (iaq > 100) {
+    } else if (iaq > 200) {
       lv_obj_add_style(iaq_panel, &iaq_high_style, 0);
     } else {
       lv_obj_add_style(iaq_panel, &iaq_warn_style, 0);
@@ -324,6 +430,14 @@ void MainPanel::notice(const Event& event)
   case EVENT_SENSOR_HUMIDITY:
     setHumidity(event.air_humidity);
     break;
+#ifdef CONFIG_HAS_EXTERNAL_SENSOR
+  case EVENT_SENSOR_EXT_TEMPERATURE:
+    setExtTemp(event.air_temperature); // event field is reused for external sensor
+    break;
+  case EVENT_SENSOR_EXT_HUMIDITY:
+    setExtHumidity(event.air_humidity); // event field is reused for external sensor
+    break;
+#endif
   case EVENT_SENSOR_IAQ:
     setIAQ(event.air_iaq);
     break;

@@ -12,7 +12,9 @@ class MainPanel : public EventObserver {
   const char* name() override { return "MainPanel"; }
 
   void setTemp(float temp);
+  void setExtTemp(float temp);
   void setHumidity(float humidity);
+  void setExtHumidity(float humidity);
   void setCO2(float co2);
   void setIAQ(float iaq);
 };
