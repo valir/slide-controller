@@ -12,7 +12,7 @@ endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-project(slide-controller)
+project(swipe-controller)
 #
 # add_dependencies(${COMPONENT_LIB} next_version)
 

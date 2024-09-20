@@ -2,6 +2,7 @@
 #include "mqtt.h"
 #include "backlight.h"
 #include "buzzer.h"
+#include "events.h"
 #include <cstdio>
 #include <esp_err.h>
 #include <esp_event.h>
@@ -34,6 +35,7 @@ extern TaskHandle_t mqttTaskHandle;
 #define MQTT_TOPIC_OTA "cmd/" CONFIG_HOSTNAME "/ota"
 #define MQTT_TOPIC_SOUND "cmd/" CONFIG_HOSTNAME "/sound"
 #define MQTT_TOPIC_DISPLAY "cmd/" CONFIG_HOSTNAME "/display"
+#define MQTT_TOPIC_AIR_QUALITY "state/" CONFIG_HOSTNAME "/air_quality"
 
 class MqttEventObserver : public EventObserver {
   virtual void notice(const Event&) override;
@@ -97,6 +99,22 @@ void handleCalibrate(const char* data, int data_len)
   } else {
     ESP_LOGI(TAG, "handleCalibrate: accepted %.*s", data_len, data);
     sensors_info.set_cal_values(cal_temperature, cal_rel_humidity, cal_iaq);
+  }
+}
+void handleAirQuality(const char* data, int data_len)
+{
+  // air quality message payload has two float values: CO2 IAQ
+  if (data == nullptr || data_len < 3) {
+    ESP_LOGE(TAG, "handleAirQuality: Incorrect data received");
+    return;
+  }
+  float co2, iaq;
+  if (2 != sscanf(data, "%f %f", &co2, &iaq)) {
+    ESP_LOGE(TAG, "handleAirQuality: incorrect params %.*s", data_len, data);
+  } else {
+    ESP_LOGI(TAG, "handleAirQuality: accepted %.*s", data_len, data);
+    events.postAirCO2Event(co2);
+    events.postIAQEvent(iaq);
   }
 }
 #endif
@@ -172,6 +190,9 @@ struct MqttSubscription mqttSubscriptions[] = {
   { .TOPIC = MQTT_TOPIC_SOUND, .qos = 1, .func = handleSound },
 #ifdef CONFIG_HAS_INTERNAL_SENSOR
   { .TOPIC = MQTT_TOPIC_CALIBRATE, .qos = 0, .func = handleCalibrate },
+#ifdef CONFIG_USE_SENSOR_BME280
+  { .TOPIC = MQTT_TOPIC_AIR_QUALITY, .qos = 1, .func = handleAirQuality },
+#endif
 #endif
   { .TOPIC = MQTT_TOPIC_OTA, .qos = 1, .func = handleOtaCmd },
 #if CONFIG_HAS_EXTERNAL_SENSOR
@@ -289,19 +310,23 @@ void MqttEventObserver::notice(const Event& event)
   constexpr size_t DATA_BUSIZE = 8;
   char data[DATA_BUSIZE];
   const char* constData = NULL;
+  int retain = 0;
   memset(data, 0, DATA_BUSIZE);
   switch (event.event) {
   case EVENT_HEARTBEAT:
     eventName = "heartbeat";
     strcpy(data, "on");
+    retain = 1;
     break;
   case EVENT_SENSOR_TEMPERATURE:
     eventName = "air_temperature";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
+    retain = 1;
     break;
   case EVENT_SENSOR_HUMIDITY:
     eventName = "air_humidity";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
+    retain = 1;
     break;
   case EVENT_SCREEN_TOUCHED: {
     eventName = "touched";
@@ -319,31 +344,40 @@ void MqttEventObserver::notice(const Event& event)
   case EVENT_SENSOR_GAS_STATUS: // BSEC_OUTPUT_RUN_IN_STATUS
     eventName = "gas_status";
     snprintf(data, DATA_BUSIZE, "%d", event.gas_status);
+    retain = 1;
     break;
+#if CONFIG_USE_SENSOR_BME680
   case EVENT_SENSOR_IAQ:
     eventName = "air_iaq";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_iaq);
+    retain = 1;
     break;
   case EVENT_SENSOR_CO2:
     eventName = "air_co2";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_co2);
+    retain = 1;
     break;
   case EVENT_SENSOR_VOC:
     eventName = "air_voc";
     snprintf(data, DATA_BUSIZE, "%.2f", event.air_voc);
+    retain = 1;
     break;
+#endif
   case EVENT_SENSOR_PRESSURE:
     eventName = "air_pressure";
     snprintf(data, DATA_BUSIZE, "%.0f", event.air_pressure);
+    retain = 1;
     break;
-#if CONFIG_HAS_EXTERNAL_SENSOR == 1
+#if CONFIG_HAS_EXTERNAL_SENSOR
   case EVENT_SENSOR_EXT_TEMPERATURE:
     eventName = "ext_temperature";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_temperature);
+    retain = 1;
     break;
   case EVENT_SENSOR_EXT_HUMIDITY:
     eventName = "ext_humidity";
     snprintf(data, DATA_BUSIZE, "%4.1f", event.air_humidity);
+    retain = 1;
     break;
 #endif
   case EVENT_OTA_STARTED:
@@ -360,6 +394,7 @@ void MqttEventObserver::notice(const Event& event)
     break;
   default:
     ESP_LOGE(TAG, "Unknown event type %d", event.event);
+    return;
   }
 
   if (!mqtt_connected) {
@@ -374,8 +409,8 @@ void MqttEventObserver::notice(const Event& event)
     }
     snprintf(topic, TOPIC_LEN, MQTT_PREFIX "/%s", eventName);
     ESP_LOGI(TAG, "%s %s", topic, eventData);
-    esp_mqtt_client_publish(
-        client, topic, eventData, strlen(eventData), 1, 0);
+    esp_mqtt_client_enqueue(
+        client, topic, eventData, strlen(eventData), 1, retain, false);
   }
 }
 
@@ -384,6 +419,10 @@ void mqttTask(void* h)
   ESP_LOGI(TAG, "Starting up");
   esp_mqtt_client_config_t mqtt_cfg = {
     .uri = CONFIG_BROKER_URL,
+    .lwt_topic = MQTT_PREFIX "/heartbeat",
+    .lwt_msg = "offline",
+    .lwt_qos = 1,
+    .lwt_retain = 1
   };
 
   needSubscribe = true;

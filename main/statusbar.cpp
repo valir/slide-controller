@@ -2,9 +2,10 @@
 #include "statusbar.h"
 #include <esp_wifi.h>
 
-lv_obj_t* time_label = nullptr;
-lv_obj_t* status_label = nullptr;
-lv_obj_t* version_label = nullptr;
+static lv_obj_t* time_label = nullptr;
+static lv_obj_t* status_label = nullptr;
+static lv_obj_t* version_label = nullptr;
+static lv_obj_t* label_hostname = nullptr;
 
 #ifndef SC_VERSION
 #error SC_VERSION is not defined
@@ -35,12 +36,27 @@ StatusBar::StatusBar(lv_obj_t* parent)
   lv_obj_align(status_label, LV_ALIGN_TOP_RIGHT, 0, 0);
   lv_obj_add_flag(status_label, LV_OBJ_FLAG_HIDDEN);
 
+  static lv_style_t version_style;
+  lv_style_init(&version_style);
+  lv_style_set_text_color(
+      &version_style, lv_palette_darken(LV_PALETTE_AMBER, 4));
   version_label = lv_label_create(parent);
-  lv_obj_add_style(version_label, &status_style, 0);
+  lv_obj_add_style(version_label, &version_style, 0);
   lv_label_set_long_mode(version_label, LV_LABEL_LONG_CLIP);
   lv_label_set_text(version_label, VERSION_AS_TEXT(SC_VERSION));
   lv_obj_set_style_text_align(version_label, LV_TEXT_ALIGN_LEFT, 0);
   lv_obj_align(version_label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+
+  label_hostname = lv_label_create(parent);
+  lv_label_set_text(label_hostname, CONFIG_HOSTNAME);
+  lv_obj_align(label_hostname, LV_ALIGN_BOTTOM_MID, 0, 0);
+  static lv_style_t label_hostname_style;
+  lv_style_init(&label_hostname_style);
+  lv_style_set_text_font(&label_hostname_style, &lv_font_montserrat_48);
+  lv_style_set_text_color(
+      &label_hostname_style, lv_palette_darken(LV_PALETTE_AMBER, 4));
+  lv_obj_add_style(label_hostname, &label_hostname_style, 0);
+  lv_obj_add_flag(label_hostname, LV_OBJ_FLAG_HIDDEN);
 }
 
 int8_t getWifiQuality()
