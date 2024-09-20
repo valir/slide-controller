@@ -5,3 +5,5 @@ build.*/
 sdkconfig.old
 sdkconfig.ci
 **/*.swp
+*.log
+compile_commands.json
